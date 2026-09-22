@@ -1,0 +1,6 @@
+{
+  "name": "VibeTour Pro",
+  "description": "Luxury Apple-style scroll-driven interactive real estate video walkthrough engine with an authenticated Admin Dashboard to configure facade, videos, chambers, and motion settings with username/password and Google sign-in.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
