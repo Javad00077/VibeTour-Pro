@@ -63,15 +63,15 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
 
   // Available room icon options
   const iconOptions = [
-    { value: 'Compass', label: 'Compass / Entry (ورودی)', icon: Compass },
-    { value: 'Tv', label: 'Salon / Living Hub (پذیرایی)', icon: Tv },
-    { value: 'BedDouble', label: 'Suite / Bedroom (مستر)', icon: BedDouble },
-    { value: 'Utensils', label: 'Kitchen / Dining (آشپزخانه)', icon: Utensils },
-    { value: 'Wine', label: 'Wine / Cellar (نوشیدنی)', icon: Wine },
-    { value: 'Sun', label: 'Terrace / Sky Deck (تراس)', icon: Sun },
-    { value: 'Flame', label: 'Fireplace / Lounge (شومینه)', icon: Flame },
-    { value: 'Anchor', label: 'Dock / Marina (ساحل)', icon: Anchor },
-    { value: 'Palette', label: 'Gallery / Art (گالری)', icon: Palette },
+    { value: 'Compass', label: 'Compass / Entry', icon: Compass },
+    { value: 'Tv', label: 'Salon / Living Hub', icon: Tv },
+    { value: 'BedDouble', label: 'Suite / Bedroom', icon: BedDouble },
+    { value: 'Utensils', label: 'Kitchen / Dining', icon: Utensils },
+    { value: 'Wine', label: 'Wine / Cellar', icon: Wine },
+    { value: 'Sun', label: 'Terrace / Sky Deck', icon: Sun },
+    { value: 'Flame', label: 'Fireplace / Lounge', icon: Flame },
+    { value: 'Anchor', label: 'Dock / Marina', icon: Anchor },
+    { value: 'Palette', label: 'Gallery / Art', icon: Palette },
   ];
 
   // Quick video presets
@@ -107,11 +107,11 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
     const newRoom: Room = {
       id: `room-custom-${Date.now()}`,
       name: `Private Suite ${newRoomNumber}`,
-      nameFa: `اتاق اختصاصی ${newRoomNumber}`,
+      nameFa: `Suite ${newRoomNumber}`,
       shortName: `0${newRoomNumber}. Suite`,
-      shortNameFa: `${newRoomNumber}. اتاق اختصاصی`,
+      shortNameFa: `0${newRoomNumber}. Suite`,
       subtitle: 'Luxury bespoke living space',
-      subtitleFa: 'فضای معماری مدرن و اختصاصی',
+      subtitleFa: 'Luxury bespoke living space',
       icon: 'BedDouble',
       startProgress: 0,
       endProgress: 1,
@@ -121,7 +121,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
       videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       thumbnailUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80',
       ambientDescription: 'Seamless modern design with floor-to-ceiling glass and smart automated environment controls.',
-      ambientDescriptionFa: 'معماری مدرن با شیشه‌های تمام‌قد و سیستم هوشمند یکپارچه.',
+      ambientDescriptionFa: 'Modern architecture with panoramic glazing and smart automation.',
       sqft: 1200,
       exposure: 'South / West',
       ceilingHeight: '3.6m',
@@ -132,22 +132,22 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           y: 50,
           frameRange: [10, 70],
           title: 'Custom Italian Joinery',
-          titleFa: 'نازک‌کاری چوب گردوی ایتالیایی',
+          titleFa: 'Custom Italian Walnut Millwork',
           category: 'Design',
           description: 'Hand-finished walnut millwork with integrated LED reveal detailing.',
-          descriptionFa: 'دست‌ساز با چوب گردو و نورپردازی مخفی خطی.'
+          descriptionFa: 'Handcrafted walnut cabinetry with indirect linear LED reveals.'
         }
       ],
       materials: [
         {
           id: `mat-${Date.now()}`,
           name: 'Calacatta Borghini Marble',
-          nameFa: 'سنگ مرمر کالاکاتا بورگینی',
+          nameFa: 'Calacatta Borghini Marble',
           category: 'Stone & Marble',
           origin: 'Carrara, Tuscany, Italy',
           finish: 'Silk Satin Honed',
           description: 'Prestigious white marble with honey gold veining.',
-          descriptionFa: 'سنگ مرمر اصیل سفید با رگه‌های طلایی عسلی.',
+          descriptionFa: 'Prestigious white marble with warm honey-gold veining.',
           swatchUrl: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80',
           spec: '20mm Slab',
           x: 45,
@@ -160,7 +160,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
     onUpdateProperty({ ...property, rooms: updatedRooms });
     setEditingRoomId(newRoom.id);
     onJumpToRoom(newRoom.id);
-    showToast(`اتاق جدید «${newRoom.nameFa}» اضافه شد!`);
+    showToast(`New room added: ${newRoom.name}`);
   };
 
   // Delete Room
@@ -174,7 +174,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
       setEditingRoomId(updatedRooms[0].id);
       onJumpToRoom(updatedRooms[0].id);
     }
-    showToast('اتاق حذف گردید.');
+    showToast('Chamber deleted.');
   };
 
   // Move Room Up/Down
@@ -202,7 +202,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
     });
     onUpdateProperty({ ...property, rooms: updatedRooms });
     if (field === 'videoUrl') {
-      showToast('ویدیوی اتاق با موفقیت به‌روزرسانی شد!');
+      showToast('Room video updated successfully!');
     }
   };
 
@@ -211,12 +211,12 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
     const newMat: MaterialItem = {
       id: `mat-${Date.now()}`,
       name: 'Custom Architectural Finish',
-      nameFa: 'متریال معماری سفارشی',
+      nameFa: 'Custom Architectural Material',
       category: 'Stone & Cladding',
       origin: 'Milan, Italy',
       finish: 'Matte Honed Satin',
       description: 'Ultra-luxury custom material specification with acoustic dampening.',
-      descriptionFa: 'توضیحات اختصاصی متریال، مشخصات مهندسی و بافت لوکس.',
+      descriptionFa: 'Bespoke architectural specification, origin, and tactile finish.',
       swatchUrl: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=300&q=80',
       spec: 'ASTM Certified Grade A',
       x: 50,
@@ -230,7 +230,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
       return r;
     });
     onUpdateProperty({ ...property, rooms: updatedRooms });
-    showToast(`متریال «${newMat.nameFa}» اضافه شد!`);
+    showToast(`New material added: ${newMat.name}`);
   };
 
   // Delete Material
@@ -242,7 +242,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
       return r;
     });
     onUpdateProperty({ ...property, rooms: updatedRooms });
-    showToast('متریال حذف شد.');
+    showToast('Material removed.');
   };
 
   // Handle Media Selected from WordPress Media Library
@@ -269,7 +269,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
   const copyShortcode = () => {
     const code = `[vibetour_pro id="${property.id}" speed="${config.scrollSpeedFactor}" scrub="${config.scrubSmoothing}" glass="${config.glassBlur}px"]`;
     navigator.clipboard.writeText(code);
-    showToast('کد کوتاه وردپرس (Shortcode) کپی شد!');
+    showToast('WordPress shortcode copied to clipboard!');
   };
 
   return (
@@ -282,7 +282,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           setMediaTargetField(null);
         }}
         onSelect={handleMediaSelected}
-        title={mediaTargetField?.type === 'roomVideo' ? 'Select Video Walkthrough / انتخاب ویدیوی اتاق' : 'Select Texture Swatch / انتخاب بافت متریال'}
+        title={mediaTargetField?.type === 'roomVideo' ? 'Select Video Walkthrough' : 'Select Texture Swatch'}
         filterType={mediaTargetField?.type === 'roomVideo' ? 'video' : 'image'}
       />
 
@@ -310,7 +310,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           className="text-[10px] text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg flex items-center gap-1 border border-white/10 transition-colors"
         >
           <Copy className="w-3 h-3 text-[#c5a880]" />
-          <span>کپی شورت‌کد</span>
+          <span>Copy Shortcode</span>
         </button>
       </div>
 
@@ -333,7 +333,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">اتاق‌ها و ویدیو</span>
+          <span className="hidden sm:inline">Chambers & Video</span>
         </button>
         <button
           onClick={() => setActiveSection('materials')}
@@ -344,7 +344,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           }`}
         >
           <Palette className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">متریال‌ها و نقاط</span>
+          <span className="hidden sm:inline">Materials & Pins</span>
         </button>
         <button
           onClick={() => setActiveSection('motion')}
@@ -355,7 +355,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           }`}
         >
           <Gauge className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">سرعت اسکرول</span>
+          <span className="hidden sm:inline">Scroll Speed</span>
         </button>
         <button
           onClick={() => setActiveSection('style')}
@@ -366,7 +366,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">تم و افکت</span>
+          <span className="hidden sm:inline">Theme & Style</span>
         </button>
         <button
           onClick={() => setActiveSection('performance')}
@@ -377,7 +377,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           }`}
         >
           <Zap className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">کش و سرعت</span>
+          <span className="hidden sm:inline">Performance</span>
         </button>
       </div>
 
@@ -390,10 +390,10 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-display text-sm font-semibold text-white">
-                  اتاق‌ها و ویدیوهای اختصاصی (Chambers & Videos)
+                  Chambers & Dedicated Videos
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  ویدیوهای MP4، فریم‌ها و مشخصات هر اتاق را مدیریت کنید.
+                  Manage MP4 video streams, frame sequences, and checkpoint gates.
                 </p>
               </div>
               <button
@@ -401,7 +401,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 className="px-3.5 py-1.5 rounded-xl bg-[#c5a880] text-black font-bold flex items-center gap-1.5 hover:bg-[#e6d5bd] transition-all shadow-md active:scale-95"
               >
                 <Plus className="w-4 h-4 font-bold" />
-                <span>افزودن اتاق (Add Room)</span>
+                <span>Add Chamber</span>
               </button>
             </div>
 
@@ -432,12 +432,12 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                             <p className="font-medium text-white text-xs">{room.nameFa || room.name}</p>
                             {room.isHub && (
                               <span className="text-[9px] bg-[#c5a880]/20 text-[#c5a880] px-1.5 py-0.5 rounded font-mono font-bold">
-                                HUB پذیرایی
+                                GRAND HUB
                               </span>
                             )}
                           </div>
                           <p className="text-[10px] text-slate-400 truncate max-w-[200px] mt-0.5">
-                            {room.videoUrl ? '🎬 ویدیوی اختصاصی فعال' : '🖼️ فریم‌های کانواس'}
+                            {room.videoUrl ? '🎬 4K Video Active' : '🖼️ Canvas Sequence'}
                           </p>
                         </div>
                       </div>
@@ -479,7 +479,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
               <div className="mt-5 p-4 rounded-2xl bg-[#161822] border border-white/10 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between pb-2 border-b border-white/10">
                   <span className="font-display font-semibold text-[#c5a880] text-xs">
-                    ویرایش: {currentEditingRoom.nameFa || currentEditingRoom.name}
+                    Editing: {currentEditingRoom.name}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">{currentEditingRoom.id}</span>
                 </div>
@@ -488,11 +488,11 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">
-                      عنوان اتاق (فارسی)
+                      Room Title
                     </label>
                     <input
                       type="text"
-                      dir="rtl"
+                      dir="ltr"
                       value={currentEditingRoom.nameFa || ''}
                       onChange={(e) => handleUpdateRoomField(currentEditingRoom.id, 'nameFa', e.target.value)}
                       className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-1.5 text-white focus:border-[#c5a880] focus:outline-none"
@@ -516,11 +516,11 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">
-                      توضیح کوتاه (فارسی)
+                      Short Subtitle
                     </label>
                     <input
                       type="text"
-                      dir="rtl"
+                      dir="ltr"
                       value={currentEditingRoom.subtitleFa || ''}
                       onChange={(e) => handleUpdateRoomField(currentEditingRoom.id, 'subtitleFa', e.target.value)}
                       className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-1.5 text-white focus:border-[#c5a880] focus:outline-none"
@@ -545,13 +545,13 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-semibold text-[#c5a880] flex items-center gap-1.5">
                       <Video className="w-4 h-4" />
-                      <span>لینک ویدیوی اختصاصی این اتاق (Video Walkthrough URL)</span>
+                      <span>Dedicated Video Walkthrough URL</span>
                     </label>
                     
                     <div className="flex items-center gap-1.5">
                       <label className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow">
                         <Upload className="w-3 h-3" />
-                        <span>فایل از سیستم</span>
+                        <span>Local File</span>
                         <input
                           type="file"
                           accept="video/mp4,video/webm,video/quicktime"
@@ -574,7 +574,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                         className="px-2.5 py-1 rounded-lg bg-[#2271b1] hover:bg-[#135e96] text-white text-[10px] font-semibold flex items-center gap-1 transition-colors shadow"
                       >
                         <FolderOpen className="w-3 h-3" />
-                        <span>رسانه وردپرس</span>
+                        <span>Media Library</span>
                       </button>
                     </div>
                   </div>
@@ -589,7 +589,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
 
                   {/* Preset Video Quick Selector */}
                   <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[10px] text-slate-400">پریست‌های آماده ویدیو:</span>
+                    <span className="text-[10px] text-slate-400">Quick Video Presets:</span>
                     <select
                       onChange={(e) => {
                         if (e.target.value) {
@@ -599,7 +599,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                       className="flex-1 bg-[#0d0f16] border border-white/10 rounded-lg px-2.5 py-1 text-slate-300 text-[10px] focus:outline-none"
                       defaultValue=""
                     >
-                      <option value="" disabled>انتخاب نمونه ویدیوی باکیفیت 4K...</option>
+                      <option value="" disabled>Select high-res 4K preset...</option>
                       {videoPresets.map((vp, i) => (
                         <option key={i} value={vp.url}>{vp.name}</option>
                       ))}
@@ -612,7 +612,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="text-[10px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
                       <ImageIcon className="w-3.5 h-3.5 text-[#c5a880]" />
-                      <span>تصویر پس‌زمینه / فریم بوم (Image / Frame URL)</span>
+                      <span>Canvas Background / Poster Frame URL</span>
                     </label>
                     <button
                       onClick={() => {
@@ -621,7 +621,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                       }}
                       className="text-[10px] text-[#c5a880] hover:underline"
                     >
-                      انتخاب از رسانه
+                      Choose from Media
                     </button>
                   </div>
                   <input
@@ -632,13 +632,13 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   />
                 </div>
 
-                {/* Pause Gate & Room Entrance Checkpoint (توقف خودکار اسکرول و منوی ورود به اتاق‌ها) */}
+                {/* Pause Gate & Room Entrance Checkpoint (Auto scroll pause & room entrance portal) */}
                 <div className="p-3 bg-[#131622] rounded-xl border border-white/10 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <DoorOpen className="w-3.5 h-3.5 text-[#c5a880]" />
                       <span className="text-xs font-bold text-white">
-                        توقف خودکار اسکرول و منوی ورود به اتاق‌ها (Pause Gate)
+                        Auto Checkpoint Pause Gate
                       </span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -653,13 +653,13 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   </div>
 
                   <p className="text-[10px] text-slate-400 leading-relaxed">
-                    هنگام اسکرول کاربر، ویدیو در نقطه مشخص شده متوقف و قفل می‌شود و منوی شیک ورود به سایر اتاق‌ها نمایش داده خواهد شد و اجازه عبور اسکرول داده نمی‌شود.
+                    Pauses kinetic scroll at designated progress checkpoint and prompts user with next chamber selection.
                   </p>
 
                   {currentEditingRoom.enablePauseGate && (
                     <div className="space-y-2.5 pt-2 border-t border-white/10 animate-in fade-in">
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-slate-300">درصد وقوع توقف روی این ویدیو:</span>
+                        <span className="text-slate-300">Checkpoint Trigger Progress:</span>
                         <span className="font-mono text-[#c5a880] font-bold">
                           {Math.round((currentEditingRoom.pauseCheckpointProgress ?? 0.85) * 100)}%
                         </span>
@@ -675,11 +675,11 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                       />
 
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400">عنوان پیام در لحظه توقف:</label>
+                        <label className="text-[10px] text-slate-400">Checkpoint Prompt Title:</label>
                         <input
                           type="text"
                           value={currentEditingRoom.pauseGateTitleFa || ''}
-                          placeholder="به تقاطع فضاهای عمارت رسیدید؛ انتخاب مقصد بعدی:"
+                          placeholder="Reached entrance portal: Choose next chamber to explore:"
                           onChange={(e) => handleUpdateRoomField(currentEditingRoom.id, 'pauseGateTitleFa', e.target.value)}
                           className="w-full bg-[#0d0f16] border border-white/10 rounded-lg px-2.5 py-1 text-white text-[10px] focus:outline-none focus:border-[#c5a880]"
                         />
@@ -692,7 +692,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-white/10">
                   <div>
                     <label className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">
-                      آیکون ناوبری (Icon)
+                      Navigation Icon
                     </label>
                     <select
                       value={currentEditingRoom.icon}
@@ -709,7 +709,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
 
                   <div>
                     <label className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">
-                      مرکز پذیرایی اصلی (Grand Salon Hub)
+                      Grand Salon Central Hub
                     </label>
                     <div className="flex items-center gap-2 pt-1">
                       <input
@@ -718,7 +718,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                         onChange={(e) => handleUpdateRoomField(currentEditingRoom.id, 'isHub', e.target.checked)}
                         className="w-4 h-4 accent-[#c5a880] rounded cursor-pointer"
                       />
-                      <span className="text-xs text-slate-300">توقف در این فضا و نمایش منو</span>
+                      <span className="text-xs text-slate-300">Serve as primary room hub</span>
                     </div>
                   </div>
                 </div>
@@ -733,10 +733,10 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-display text-sm font-semibold text-white">
-                  متریال‌ها و نقاط تعاملی روی بوم (Materials & Interactive Pins)
+                  Architectural Materials & Interactive Hotspot Pins
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  متریال‌های لوکس برای فضای «{currentEditingRoom?.nameFa || currentEditingRoom?.name}» را با نقطه روی تصویر تنظیم کنید.
+                  Configure luxury architectural swatches and place coordinate pins on the canvas.
                 </p>
               </div>
               <button
@@ -744,7 +744,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 className="px-3.5 py-1.5 rounded-xl bg-[#c5a880] text-black font-bold flex items-center gap-1.5 hover:bg-[#e6d5bd] transition-all shadow-md active:scale-95"
               >
                 <Plus className="w-4 h-4 font-bold" />
-                <span>افزودن متریال جدید (Add Material)</span>
+                <span>Add Material Swatch</span>
               </button>
             </div>
 
@@ -776,10 +776,10 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   {/* Names */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">نام فارسی متریال</label>
+                      <label className="text-[10px] text-slate-400 block mb-1">Material Title</label>
                       <input 
                         type="text" 
-                        dir="rtl"
+                        dir="ltr"
                         value={mat.nameFa || ''} 
                         onChange={(e) => {
                           const updated = (currentEditingRoom.materials || []).map((m) => m.id === mat.id ? { ...m, nameFa: e.target.value } : m);
@@ -804,9 +804,9 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
 
                   {/* Description */}
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">توضیحات و مشخصات متریال (فارسی)</label>
+                    <label className="text-[10px] text-slate-400 block mb-1">Material Description & Specifications</label>
                     <textarea
-                      dir="rtl"
+                      dir="ltr"
                       rows={2}
                       value={mat.descriptionFa || ''}
                       onChange={(e) => {
@@ -822,7 +822,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-semibold text-[#c5a880] flex items-center gap-1.5">
                         <Crosshair className="w-3.5 h-3.5" />
-                        <span>موقعیت نقطه روی تصویر (Pin X / Y Position):</span>
+                        <span>Interactive Pin Coordinates (X / Y):</span>
                       </span>
                       <span className="font-mono text-[10px] text-slate-300">
                         X: {mat.x ?? 50}% • Y: {mat.y ?? 50}%
@@ -832,7 +832,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                          <span>موقعیت افقی (X)</span>
+                          <span>Horizontal (X)</span>
                           <span>{mat.x ?? 50}%</span>
                         </div>
                         <input
@@ -850,7 +850,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
 
                       <div>
                         <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                          <span>موقعیت عمودی (Y)</span>
+                          <span>Vertical (Y)</span>
                           <span>{mat.y ?? 50}%</span>
                         </div>
                         <input
@@ -871,7 +871,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   {/* Swatch URL & WP Media Picker */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] text-slate-400">آدرس تصویر بافت (Texture Swatch URL)</label>
+                      <label className="text-[10px] text-slate-400">Texture Swatch Image URL</label>
                       <button
                         onClick={() => {
                           setMediaTargetField({ type: 'materialSwatch', roomId: currentEditingRoom.id, materialId: mat.id });
@@ -879,7 +879,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                         }}
                         className="text-[10px] text-[#c5a880] hover:underline"
                       >
-                        انتخاب از رسانه وردپرس
+                        Choose from Media Library
                       </button>
                     </div>
                     <input 
@@ -903,10 +903,10 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           <div className="space-y-4">
             <div>
               <h4 className="font-display text-sm font-semibold text-white">
-                سرعت اسکرول و حس سینمایی (Cinematic Scroll Velocity)
+                Cinematic Scroll Velocity & Inertia
               </h4>
               <p className="text-[11px] text-slate-400">
-                سرعت اسکرول را کاهش دهید تا کاربر با آرامش و شکوه در فضا حرکت کند.
+                Calibrate scroll speed factor for ultra-luxurious, cinematic kinetic feel.
               </p>
             </div>
 
@@ -914,7 +914,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
             <div className="p-4 bg-[#161822] rounded-2xl border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-white">
-                  ضریب سرعت اسکرول (سرعت کمتر = جلوه لوکس‌تر)
+                  Scroll Speed Multiplier (Lower = More Cinematic)
                 </label>
                 <span className="font-mono text-xs font-bold text-[#c5a880]">
                   {((config.scrollSpeedFactor || 0.45) * 100).toFixed(0)}% Speed
@@ -924,10 +924,10 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
               {/* Quick Presets */}
               <div className="grid grid-cols-4 gap-1.5 pt-1">
                 {[
-                  { label: '۰.۲۵x آرام', val: 0.25 },
-                  { label: '۰.۴۵x سینما', val: 0.45 },
-                  { label: '۰.۸x متعادل', val: 0.8 },
-                  { label: '۱.۲x سریع', val: 1.2 },
+                  { label: '0.25x Ultra Slow', val: 0.25 },
+                  { label: '0.45x Cinematic', val: 0.45 },
+                  { label: '0.80x Balanced', val: 0.8 },
+                  { label: '1.20x Dynamic', val: 1.2 },
                 ].map((p) => (
                   <button
                     key={p.val}
@@ -954,7 +954,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 className="w-full accent-[#c5a880] cursor-pointer"
               />
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                میزان ۳۵٪ الی ۴۵٪ بهترین توازن را برای تورهای املاک لوکس ایجاد می‌کند.
+                35% to 45% creates the premier balance for luxury real estate presentations.
               </p>
             </div>
 
@@ -964,7 +964,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 <div className="flex items-center gap-2">
                   <DoorOpen className="w-4 h-4 text-[#c5a880]" />
                   <label className="text-xs font-semibold text-white">
-                    فعال‌سازی ایستگاه‌های توقف خودکار برای تمام اتاق‌ها
+                    Enable Global Checkpoint Pause Gates
                   </label>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -978,7 +978,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                 </label>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                در صورت فعال بودن، هر فضایی که قابلیت Pause Gate روی آن روشن باشد در فریم تعیین شده اسکرول را متوقف کرده و منوی تصمیم‌گیری را تا زمان تعیین مقصد یا کلیک ادامه قفل نگه می‌دارد.
+                When enabled, chambers with pause gates will pause the scroll at specified checkpoints to prompt navigation.
               </p>
             </div>
 
@@ -986,7 +986,7 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
             <div className="p-4 bg-[#161822] rounded-2xl border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-white">
-                  نرمی و لختی حرکت (Inertia Smoothing)
+                  GSAP Scrub Smoothing Inertia
                 </label>
                 <span className="font-mono text-xs font-bold text-[#c5a880]">
                   {config.scrubSmoothing.toFixed(1)}s
@@ -1010,17 +1010,17 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
           <div className="space-y-4">
             <div>
               <h4 className="font-display text-sm font-semibold text-white">
-                طراحی گلس‌مورفیک و افکت‌های بصری
+                Glassmorphic Styling & HUD Visuals
               </h4>
               <p className="text-[11px] text-slate-400">
-                تنظیم میزان تاری شیشه، تم رنگی شامپاینی و شفافیت المان‌ها.
+                Calibrate backdrop blur, champagne gold accents, and card opacity.
               </p>
             </div>
 
             <div className="p-4 bg-[#161822] rounded-2xl border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-white">
-                  میزان تاری پس‌زمینه گلس (Glass Blur)
+                  Glass Backdrop Blur Radius
                 </label>
                 <span className="font-mono text-xs font-bold text-[#c5a880]">
                   {config.glassBlur}px
@@ -1045,19 +1045,19 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
             <div>
               <h4 className="font-display text-sm font-semibold text-white flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>سازگاری ۱۰۰٪ با LiteSpeed و WP Rocket</span>
+                <span>100% LiteSpeed & WP Rocket Compatible</span>
               </h4>
             </div>
 
             <div className="p-4 bg-[#161822] rounded-2xl border border-white/10 space-y-2 text-xs">
               <p className="text-slate-300">
-                • ایزولاسیون کامل نام‌گذاری و پیشوند CSS با <code>vbt-t-</code>.
+                • Full CSS isolation with vbt-t- prefix preventing theme conflicts.
               </p>
               <p className="text-slate-300">
-                • رندر مستقیم در HTML5 Canvas بدون ایجاد سربار روی DOM.
+                • Hardware-accelerated canvas pipeline with minimal DOM overhead.
               </p>
               <p className="text-slate-300">
-                • بارگذاری هوشمند ویدیوها بدون مسدودسازی رندر اولیه صفحه.
+                • Async preloading ensures instant First Contentful Paint.
               </p>
             </div>
           </div>
@@ -1069,13 +1069,13 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
       <div className="bg-[#181a24] px-4 py-3 border-t border-white/10 flex items-center justify-between text-xs">
         <span className="text-slate-400 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          هماهنگ‌سازی زنده با بوم تور فعال است
+          Live Walkthrough Sync Active
         </span>
         <button
           onClick={copyShortcode}
           className="px-4 py-1.5 rounded-xl bg-[#c5a880] text-black font-bold hover:bg-[#e6d5bd] transition-all shadow-md active:scale-95"
         >
-          درج در صفحه
+          Apply to Page
         </button>
       </div>
     </div>

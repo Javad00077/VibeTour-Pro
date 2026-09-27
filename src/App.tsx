@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Building2, 
   Bed, 
@@ -20,7 +20,12 @@ import {
   FolderArchive,
   Compass,
   CheckCircle,
-  Share2
+  Share2,
+  Euro,
+  Maximize,
+  UserCheck,
+  Layers,
+  Play
 } from 'lucide-react';
 import { LUXURY_PROPERTIES, DEFAULT_CONFIG } from './data/properties';
 import { PropertyListing, PluginConfig, ActiveTab } from './types';
@@ -32,46 +37,69 @@ import { VideoOptimizerGuide } from './components/VideoOptimizerGuide';
 import { HeaderNav } from './components/HeaderNav';
 import { AdminDashboard } from './components/AdminDashboard';
 import { authService } from './utils/authService';
-
-const STORAGE_PROPERTIES_KEY = 'vbt_persisted_properties_v1';
-const STORAGE_CONFIG_KEY = 'vbt_persisted_config_v1';
+import { StorageService } from './services/storageService';
 
 export default function App() {
   const [properties, setProperties] = useState<PropertyListing[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_PROPERTIES_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return LUXURY_PROPERTIES;
+    return StorageService.getInitialProperties();
   });
 
   const [currentProperty, setCurrentProperty] = useState<PropertyListing>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_PROPERTIES_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
-      }
-    } catch {}
-    return LUXURY_PROPERTIES[0];
+    const initialProps = StorageService.getInitialProperties();
+    const savedPropId = StorageService.getInitialSelectedPropertyId();
+    if (savedPropId) {
+      const found = initialProps.find((p) => p.id === savedPropId);
+      if (found) return found;
+    }
+    return initialProps[0] || LUXURY_PROPERTIES[0];
   });
 
   const [config, setConfig] = useState<PluginConfig>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_CONFIG_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return DEFAULT_CONFIG;
+    return StorageService.getInitialConfig();
   });
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('walkthrough');
-  const [activeRoomId, setActiveRoomId] = useState<string>(LUXURY_PROPERTIES[0].rooms[0].id);
+
+  const [activeRoomId, setActiveRoomId] = useState<string>(() => {
+    const initialProps = StorageService.getInitialProperties();
+    const savedPropId = StorageService.getInitialSelectedPropertyId();
+    const prop = (savedPropId ? initialProps.find((p) => p.id === savedPropId) : null) || initialProps[0] || LUXURY_PROPERTIES[0];
+    const savedRoomId = StorageService.getInitialActiveRoomId();
+    if (savedRoomId && prop.rooms.some((r) => r.id === savedRoomId)) {
+      return savedRoomId;
+    }
+    return prop.rooms[0]?.id || 'room-1';
+  });
+
   const [shareCopied, setShareCopied] = useState<boolean>(false);
 
   // Authentication State for Admin-only access enforcement
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     return authService.getSession().isAuthenticated;
   });
+
+  // Asynchronous background hydration from backend API or IndexedDB
+  useEffect(() => {
+    StorageService.loadAsyncData().then((data) => {
+      if (!data) return;
+      if (data.properties && data.properties.length > 0) {
+        setProperties(data.properties);
+        const currentId = data.selectedPropertyId || StorageService.getInitialSelectedPropertyId();
+        const active = (currentId ? data.properties.find((p) => p.id === currentId) : null) || data.properties[0];
+        setCurrentProperty(active);
+
+        const targetRoomId = data.activeRoomId || StorageService.getInitialActiveRoomId();
+        if (targetRoomId && active.rooms.some((r) => r.id === targetRoomId)) {
+          setActiveRoomId(targetRoomId);
+        } else if (active.rooms.length > 0) {
+          setActiveRoomId(active.rooms[0].id);
+        }
+      }
+      if (data.config) {
+        setConfig({ ...data.config, language: 'en' });
+      }
+    });
+  }, []);
 
   // Sync auth state across sessions
   useEffect(() => {
@@ -90,54 +118,67 @@ export default function App() {
     }
   }, [isAdmin, activeTab]);
 
+  // Select property handler
+  const handleSelectProperty = useCallback((p: PropertyListing) => {
+    setCurrentProperty(p);
+    const firstRoomId = p.rooms[0]?.id || '';
+    setActiveRoomId(firstRoomId);
+    StorageService.saveActiveState(p.id, firstRoomId);
+  }, []);
+
+  // Select room handler
+  const handleSelectRoom = useCallback((roomId: string) => {
+    setActiveRoomId(roomId);
+    StorageService.saveActiveState(currentProperty.id, roomId);
+  }, [currentProperty.id]);
+
   // Update property state when edited in Elementor Builder or Admin Dashboard
-  const handleUpdateProperty = (updated: PropertyListing) => {
+  const handleUpdateProperty = useCallback((updated: PropertyListing) => {
     setCurrentProperty(updated);
     setProperties((prev) => {
       const next = prev.map((p) => (p.id === updated.id ? updated : p));
-      try {
-        localStorage.setItem(STORAGE_PROPERTIES_KEY, JSON.stringify(next));
-      } catch {}
+      StorageService.saveProperties(next);
       return next;
     });
-  };
+    StorageService.saveActiveState(updated.id, activeRoomId);
+  }, [activeRoomId]);
 
   // Add new property profile (Admin only)
-  const handleAddProperty = (newProp: PropertyListing) => {
+  const handleAddProperty = useCallback((newProp: PropertyListing) => {
     setProperties((prev) => {
       const next = [newProp, ...prev];
-      try {
-        localStorage.setItem(STORAGE_PROPERTIES_KEY, JSON.stringify(next));
-      } catch {}
+      StorageService.saveProperties(next);
       return next;
     });
     setCurrentProperty(newProp);
-    if (newProp.rooms.length > 0) {
-      setActiveRoomId(newProp.rooms[0].id);
+    const firstRoom = newProp.rooms[0]?.id || '';
+    if (firstRoom) {
+      setActiveRoomId(firstRoom);
     }
-  };
+    StorageService.saveActiveState(newProp.id, firstRoom);
+  }, []);
 
   // Delete property profile (Admin only)
-  const handleDeleteProperty = (id: string) => {
+  const handleDeleteProperty = useCallback((id: string) => {
     setProperties((prev) => {
       const next = prev.filter((p) => p.id !== id);
-      try {
-        localStorage.setItem(STORAGE_PROPERTIES_KEY, JSON.stringify(next));
-      } catch {}
+      StorageService.saveProperties(next);
       if (currentProperty.id === id && next.length > 0) {
         setCurrentProperty(next[0]);
-        setActiveRoomId(next[0].rooms[0].id);
+        const firstRoom = next[0].rooms[0]?.id || '';
+        setActiveRoomId(firstRoom);
+        StorageService.saveActiveState(next[0].id, firstRoom);
       }
       return next;
     });
-  };
+  }, [currentProperty.id]);
 
-  const handleUpdateConfig = (newCfg: PluginConfig) => {
-    setConfig(newCfg);
-    try {
-      localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(newCfg));
-    } catch {}
-  };
+  // Update config settings
+  const handleUpdateConfig = useCallback((newCfg: PluginConfig) => {
+    const enConfig: PluginConfig = { ...newCfg, language: 'en' };
+    setConfig(enConfig);
+    StorageService.saveConfig(enConfig);
+  }, []);
 
   const handleLogout = () => {
     authService.logout();
@@ -159,10 +200,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         properties={properties}
         currentProperty={currentProperty}
-        onSelectProperty={(p) => {
-          setCurrentProperty(p);
-          setActiveRoomId(p.rooms[0].id);
-        }}
+        onSelectProperty={handleSelectProperty}
         isAdmin={isAdmin}
         onLogout={handleLogout}
       />
@@ -178,7 +216,7 @@ export default function App() {
               property={currentProperty}
               config={config}
               activeRoomId={activeRoomId}
-              onSelectRoom={(roomId) => setActiveRoomId(roomId)}
+              onSelectRoom={handleSelectRoom}
               onOpenCustomizer={isAdmin ? () => setActiveTab('elementor_builder') : undefined}
               isAdmin={isAdmin}
             />
@@ -337,8 +375,8 @@ export default function App() {
                 property={currentProperty}
                 config={config}
                 onUpdateProperty={handleUpdateProperty}
-                onUpdateConfig={setConfig}
-                onJumpToRoom={(roomId) => setActiveRoomId(roomId)}
+                onUpdateConfig={handleUpdateConfig}
+                onJumpToRoom={handleSelectRoom}
               />
             </div>
 
@@ -355,7 +393,7 @@ export default function App() {
                 property={currentProperty}
                 config={config}
                 activeRoomId={activeRoomId}
-                onSelectRoom={(roomId) => setActiveRoomId(roomId)}
+                onSelectRoom={handleSelectRoom}
                 isAdmin={isAdmin}
               />
             </div>
@@ -397,7 +435,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 6: AUTHENTICATED ADMIN DASHBOARD (تنظیمات نما، ویدیوها، سرعت و مدیریت رمز/جیمیل) */}
+        {/* TAB 6: AUTHENTICATED ADMIN DASHBOARD (Facade, Videos, Speed, Credentials) */}
         {activeTab === 'admin_dashboard' && (
           <div className="animate-in fade-in duration-300">
             <AdminDashboard
@@ -405,10 +443,7 @@ export default function App() {
               currentProperty={currentProperty}
               config={config}
               onUpdateProperty={handleUpdateProperty}
-              onSelectProperty={(p) => {
-                setCurrentProperty(p);
-                setActiveRoomId(p.rooms[0].id);
-              }}
+              onSelectProperty={handleSelectProperty}
               onAddProperty={handleAddProperty}
               onDeleteProperty={handleDeleteProperty}
               onUpdateConfig={handleUpdateConfig}

@@ -53,11 +53,11 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                   VIBETOUR <span className="text-[#c5a880]">PRO</span>
                 </span>
                 <span className="text-[9px] uppercase font-mono tracking-widest px-1.5 py-0.5 rounded bg-white/10 text-slate-300 border border-white/10 font-bold">
-                  {isAdmin ? 'مدیریت فعال' : 'بازدید تور'}
+                  {isAdmin ? 'Admin Active' : 'Virtual Tour'}
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 font-light">
-                {isAdmin ? 'سامانه کنترل و پیکربندی مدیر کل' : 'موتور سینمایی بازدید املاک و ویلاهای لوکس'}
+                {isAdmin ? 'System Control & Architecture Manager' : 'Cinematic Real Estate Walkthrough Engine'}
               </p>
             </div>
           </div>
@@ -73,11 +73,11 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                   if (found) onSelectProperty(found);
                 }}
                 className="bg-transparent text-xs text-white pr-4 appearance-none focus:outline-none cursor-pointer font-medium max-w-[160px] sm:max-w-[220px] truncate"
-                title="انتخاب ملک جهت مشاهده تور"
+                title="Select Property to View Tour"
               >
                 {properties.map((p) => (
                   <option key={p.id} value={p.id} className="bg-[#141622] text-white">
-                    {p.titleFa ? `${p.titleFa} (${p.price})` : `${p.title} (${p.price})`}
+                    {`${p.title} (${p.price})`}
                   </option>
                 ))}
               </select>
@@ -99,7 +99,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             }`}
           >
             <Compass className="w-3.5 h-3.5" />
-            <span>مشاهده تور تعاملی (Walkthrough)</span>
+            <span>Interactive Walkthrough</span>
           </button>
 
           {/* ADMIN ONLY TABS: Strictly Hidden from Regular Visitors */}
@@ -115,7 +115,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 }`}
               >
                 <Shield className="w-3.5 h-3.5 text-[#c5a880]" />
-                <span>داشبورد تنظیمات مدیر</span>
+                <span>Admin Dashboard</span>
               </button>
 
               <button
@@ -128,7 +128,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 }`}
               >
                 <Sliders className="w-3.5 h-3.5" />
-                <span>استودیو المنتور</span>
+                <span>Elementor Studio</span>
               </button>
 
               <button
@@ -141,7 +141,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#c5a880]" />
-                <span>بهینه‌ساز ویدیو</span>
+                <span>Video Optimizer</span>
               </button>
 
               <button
@@ -154,7 +154,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 }`}
               >
                 <FolderArchive className="w-3.5 h-3.5" />
-                <span>خروجی کد وردپرس</span>
+                <span>WordPress Export</span>
               </button>
 
               <button
@@ -167,7 +167,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 }`}
               >
                 <TrendingUp className="w-3.5 h-3.5" />
-                <span>تحلیل ROI</span>
+                <span>ROI Analytics</span>
               </button>
             </>
           )}
@@ -179,32 +179,32 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveTab('admin_dashboard')}
-                title="کنترل پنل مدیر فعال است"
+                title="Admin Control Panel Active"
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="font-mono text-[11px]">
-                  {currentUser?.email || currentUser?.username || 'مدیر کل'}
+                  {currentUser?.email || currentUser?.username || 'Administrator'}
                 </span>
               </button>
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  title="خروج از حساب مدیر"
+                  title="Sign out of Administrator Session"
                   className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 transition-colors"
                 >
-                  خروج
+                  Logout
                 </button>
               )}
             </div>
           ) : (
             <button
               onClick={() => setActiveTab('admin_dashboard')}
-              title="ورود مدیر با رمز عبور یا جیمیل"
+              title="Admin Login with credentials"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#c5a880]/15 hover:bg-[#c5a880]/25 border border-[#c5a880]/40 text-[#e6d5bd] hover:text-white transition-colors"
             >
               <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
-              <span className="font-medium text-[11px]">ورود مدیریت (Admin Login)</span>
+              <span className="font-medium text-[11px]">Admin Login</span>
             </button>
           )}
 

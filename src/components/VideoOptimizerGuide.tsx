@@ -1,24 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Video, 
   CheckCircle2, 
-  AlertTriangle, 
   XCircle, 
   Zap, 
-  Sliders, 
   Copy, 
   Check, 
   Terminal, 
-  Play, 
-  Pause, 
   Server, 
   FileVideo, 
   ShieldCheck, 
   Sparkles,
   RefreshCw,
-  ExternalLink,
-  HelpCircle,
-  Clock,
   Gauge,
   Upload,
   ArrowRight,
@@ -78,26 +71,26 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
     // 1. Direct URL check
     if (isBlob) {
       directUrl = 'pass';
-      details.push(`📁 فایل ویدیوی محلی (${customFileName || 'GSAP Walkthrough'}) با موفقیت از سیستم شما بارگذاری شد (بدون نیاز به هاست و ۱۰۰٪ بدون خطای CORS).`);
+      details.push(`📁 Local video file (${customFileName || 'GSAP Walkthrough'}) loaded directly from system memory (zero CORS issues).`);
     } else if (url.includes('drive.google.com') || url.includes('dropbox.com') || url.includes('youtube.com') || url.includes('vimeo.com')) {
       if (url.includes('drive.google.com') && !url.includes('&export=download')) {
         directUrl = 'warn';
-        details.push('⚠️ آدرس گوگل‌درایو از نوع صفحه پیش‌نمایش است؛ پیشنهاد می‌شود فایل را با دکمه "انتخاب فایل محلی" مستقیماً از سیستم بارگذاری کنید.');
+        details.push('⚠️ Google Drive URL is a preview page; direct download link or local file is recommended.');
       } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
         directUrl = 'fail';
-        details.push('❌ لینک‌های یوتیوب صفحه وب هستند و مرورگر اجازه اسکرول فریم‌های آن را نمی‌دهد. فایل خام MP4 را مستقیماً از سیستم انتخاب کنید.');
+        details.push('❌ YouTube links are HTML web pages, not direct video streams. Please provide a raw .mp4 or .webm file.');
       } else if (url.includes('dropbox.com') && url.includes('dl=0')) {
         directUrl = 'warn';
-        details.push('⚠️ لینک دراپ‌باکس با dl=0 دانلود مستقیم نیست؛ سیستم به صورت خودکار حالت سازگار را امتحان می‌کند.');
+        details.push('⚠️ Dropbox link has dl=0; system is attempting automatic raw file redirection.');
       }
     } else if (!url.match(/\.(mp4|webm|m4v|mov)(\?.*)?$/i)) {
       directUrl = 'warn';
-      details.push('ℹ️ آدرس ویدیو فاقد پسوند استاندارد مستقیم بود؛ سیستم در حال بررسی استریم آن است.');
+      details.push('ℹ️ URL does not contain a standard video extension; inspecting stream headers.');
     } else {
-      details.push('✅ آدرس لینک فایل مستقیم ویدیو تایید شد.');
+      details.push('✅ Direct video stream file URL verified.');
     }
 
-    // 2. Intelligent Dual-Pass Video Loader (Resilient to CORS & Server restrictions)
+    // 2. Intelligent Dual-Pass Video Loader
     const testWithVideo = (allowCors: boolean) => {
       const video = document.createElement('video');
       video.muted = true;
@@ -116,7 +109,6 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
 
       const timeout = setTimeout(() => {
         if (allowCors && !isBlob) {
-          // Pass 1 failed due to CORS headers on server! Automatically fallback to Pass 2 (Direct Hardware Mode)!
           testWithVideo(false);
         } else {
           setIsTesting(false);
@@ -127,13 +119,13 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
             seekPerformance: 'fail',
             seekTimeMs: 0,
             videoDuration: 0,
-            resolution: 'نامشخص',
-            codecHint: 'عدم پاسخگویی سرور',
+            resolution: 'Unknown',
+            codecHint: 'Server Unreachable',
             isDirectMode: false,
             testedUrl: url,
             details: [
               ...details,
-              '❌ سرور ویدیو به درخواست مرورگر پاسخی نداد. می‌توانید با دکمه "انتخاب فایل محلی از سیستم"، فایل را مستقیماً از روی کامپیوتر خود انتخاب کنید تا فوراً تست شود!'
+              '❌ Video server did not respond in time. You can select a local MP4 file to test instantaneous rendering.'
             ]
           });
         }
@@ -144,12 +136,12 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
         const res = `${video.videoWidth} × ${video.videoHeight}`;
         
         if (allowCors && !isBlob) {
-          details.push(`✅ ویدیو با هدرهای باز CORS لود شد (${res}). سازگار با تمام موتورهای پردازش Canvas.`);
+          details.push(`✅ Video loaded with open CORS headers (${res}). Full Canvas filter & pixel compatibility.`);
         } else {
-          details.push(`✅ ویدیو با موفقیت شناسایی و لود شد (${res})! سیستم به صورت خودکار حالت سخت‌افزاری بدون نیاز به CORS را فعال کرد تا هیچ خطایی روی سایت شما رخ ندهد.`);
+          details.push(`✅ Video recognized successfully (${res})! Direct Hardware Layer enabled.`);
         }
 
-        // Test seeking speed (GSAP / Keyframe responsiveness)
+        // Test seeking responsiveness
         const seekStart = performance.now();
         video.currentTime = video.duration * 0.5;
 
@@ -159,13 +151,13 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
           
           if (seekDuration < 150) {
             seekPerformance = 'excellent';
-            details.push(`⚡ پاسخگویی فریم‌ها آنی و عالی است (${seekDuration}ms). کلیدفریم‌ها (GOP) و FastStart عالی تنظیم شده‌اند.`);
+            details.push(`⚡ Instant frame response (${seekDuration}ms). Keyframe GOP & FastStart optimized.`);
           } else if (seekDuration < 400) {
             seekPerformance = 'good';
-            details.push(`👍 اسکرول روان است (${seekDuration}ms). برای اسکرول‌های سریع نیز پاسخگوست.`);
+            details.push(`👍 Smooth scrubbing (${seekDuration}ms). Well-suited for responsive scrubbing.`);
           } else {
             seekPerformance = 'slow';
-            details.push(`⚠️ تاخیر فریم (${seekDuration}ms) مشاهده شد؛ پیشنهاد می‌شود برای حداکثر نرمی از دستور بهینه‌ساز استفاده کنید.`);
+            details.push(`⚠️ Scrub latency observed (${seekDuration}ms). Consider optimizing keyframe interval with FFmpeg.`);
           }
 
           setIsTesting(false);
@@ -183,7 +175,6 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
             details
           });
 
-          // Load into live preview player safely (without strict crossOrigin)
           if (testVideoRef.current) {
             if (allowCors) {
               testVideoRef.current.crossOrigin = 'anonymous';
@@ -200,7 +191,6 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
       video.onerror = () => {
         clearTimeout(timeout);
         if (allowCors && !isBlob) {
-          // If CORS failed, immediately re-test without crossOrigin!
           testWithVideo(false);
         } else {
           setIsTesting(false);
@@ -211,13 +201,13 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
             seekPerformance: 'fail',
             seekTimeMs: 0,
             videoDuration: 0,
-            resolution: 'عدم بارگذاری',
-            codecHint: 'نامعتبر',
+            resolution: 'Failed to load',
+            codecHint: 'Invalid Format or Network Filter',
             isDirectMode: false,
             testedUrl: url,
             details: [
               ...details,
-              '❌ خطای بارگذاری: لینک ویدیو قابل دسترس نیست یا فیلتر است. پیشنهاد: از دکمه زیر فایل ویدیو را مستقیماً از روی کامپیوتر یا موبایل انتخاب کنید تا بدون نیاز به آپلود در هاست فوراً اجرا شود.'
+              '❌ Video could not be loaded. Ensure the URL is accessible or upload a local file.'
             ]
           });
         }
@@ -258,7 +248,7 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
     }
   };
 
-  const ffmpegCommandUltraFast = `# دستور بهینه‌سازی تور اسکرولی (حداکثر سرعت بدون لگ)
+  const ffmpegCommandUltraFast = `# High-Performance Kinetic Walkthrough Scrubbing Profile
 ffmpeg -i input_video.mp4 \\
   -c:v libx264 \\
   -preset slow \\
@@ -271,7 +261,7 @@ ffmpeg -i input_video.mp4 \\
   -an \\
   output_apple_style.mp4`;
 
-  const htaccessCode = `# افزودن هدر CORS برای ویدیوها در وردپرس (.htaccess)
+  const htaccessCode = `# WordPress / Apache CORS Header for Video Scrubbing (.htaccess)
 <IfModule mod_headers.c>
   <FilesMatch "\\.(mp4|m4v|webm|ogv)$">
     Header set Access-Control-Allow-Origin "*"
@@ -280,7 +270,7 @@ ffmpeg -i input_video.mp4 \\
   </FilesMatch>
 </IfModule>`;
 
-  const nginxCode = `# تنظیمات Nginx برای ویدیوهای وردپرس و رفع خطای CORS
+  const nginxCode = `# Nginx CORS & Byte-Range Video Streaming Configuration
 location ~* \\.(mp4|webm|ogg)$ {
     add_header Access-Control-Allow-Origin *;
     add_header Access-Control-Allow-Methods 'GET, OPTIONS';
@@ -291,7 +281,7 @@ location ~* \\.(mp4|webm|ogg)$ {
 }`;
 
   return (
-    <div className="bg-[#12141d] rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col h-full text-slate-200" dir="rtl">
+    <div className="bg-[#12141d] rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col h-full text-slate-200" dir="ltr">
       
       {/* Header */}
       <div className="bg-[#181a24] px-5 py-4 border-b border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
@@ -302,14 +292,14 @@ location ~* \\.(mp4|webm|ogg)$ {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-display text-base font-bold text-white tracking-wide">
-                موتور تست هوشمند و ضد‌خطای ویدیو (Smart Video Resilience Engine)
+                Smart Video Resilience & Optimizer Engine
               </h2>
               <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
                 Auto-Recovery CORS
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              سیستم به صورت خودکار محدودیت‌های CORS را بای‌پس کرده و با شتاب‌دهی سخت‌افزاری ویدیو را بدون هیچ اروری لود می‌کند.
+              Diagnostic test bench for high-resolution 4K 60FPS scrubbing video assets with hardware acceleration.
             </p>
           </div>
         </div>
@@ -317,7 +307,7 @@ location ~* \\.(mp4|webm|ogg)$ {
         <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
           <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>سیستم بدون مسدودی فعال است</span>
+            <span>Hardware Pipeline Active</span>
           </span>
         </div>
       </div>
@@ -331,11 +321,11 @@ location ~* \\.(mp4|webm|ogg)$ {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#c5a880]" />
               <h3 className="font-display text-sm font-bold text-white">
-                تست و عیب‌یابی آنلاین ویدیوی GSAP شما (بدون خطای سرور)
+                Live Video Diagnostics & Keyframe Responsiveness
               </h3>
             </div>
             <span className="text-[11px] text-slate-400">
-              پشتیبانی از لینک مستقیم، وردپرس، یا انتخاب مستقیم فایل از سیستم
+              Supports direct URLs, WordPress uploads, or local filesystem files
             </span>
           </div>
 
@@ -344,10 +334,9 @@ location ~* \\.(mp4|webm|ogg)$ {
             <div className="flex flex-col sm:flex-row gap-2.5">
               <input
                 type="text"
-                dir="ltr"
                 value={videoUrlInput}
                 onChange={(e) => setVideoUrlInput(e.target.value)}
-                placeholder="لینک ویدیو را وارد کنید: https://your-domain.com/wp-content/uploads/room.mp4"
+                placeholder="Enter direct video URL: https://your-domain.com/wp-content/uploads/room.mp4"
                 className="flex-1 bg-[#0d0f16] border border-white/15 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:border-[#c5a880] focus:outline-none"
               />
               <button
@@ -358,12 +347,12 @@ location ~* \\.(mp4|webm|ogg)$ {
                 {isTesting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>در حال تست و بازیابی فریم‌ها...</span>
+                    <span>Analyzing Frames...</span>
                   </>
                 ) : (
                   <>
                     <Zap className="w-4 h-4" />
-                    <span>تست و اجرای هوشمند ویدیو</span>
+                    <span>Test Video Stream</span>
                   </>
                 )}
               </button>
@@ -374,13 +363,13 @@ location ~* \\.(mp4|webm|ogg)$ {
               <div className="flex items-center gap-2 text-slate-300 text-[11px]">
                 <HardDrive className="w-4 h-4 text-emerald-400" />
                 <span>
-                  <strong>روش ویژه (پیشنهادی):</strong> فایل ویدیوی GSAP خود را مستقیماً از روی کامپیوتر یا موبایل انتخاب کنید:
+                  <strong>Local File Option:</strong> Select an MP4 directly from your system to test without web hosting:
                 </span>
               </div>
 
               <label className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95">
                 <Upload className="w-3.5 h-3.5" />
-                <span>انتخاب فایل ویدیو از سیستم (۱۰۰٪ بدون نیاز به هاست)</span>
+                <span>Choose Local Video File</span>
                 <input
                   type="file"
                   accept="video/mp4,video/webm,video/quicktime"
@@ -396,52 +385,52 @@ location ~* \\.(mp4|webm|ogg)$ {
             <div className="mt-4 p-4 rounded-xl bg-[#0e1017] border border-white/10 space-y-3.5 animate-in fade-in">
               <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10">
                 <span className="font-bold text-white text-xs flex items-center gap-1.5">
-                  <span>وضعیت لود ویدیو:</span>
+                  <span>Stream Status:</span>
                   {testResult.corsStatus === 'pass' ? (
                     <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-bold">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      آماده و فعال بدون هیچ اروری ✅
+                      Ready & Validated
                     </span>
                   ) : (
                     <span className="text-rose-400 flex items-center gap-1 text-[11px]">
                       <XCircle className="w-4 h-4" />
-                      عدم دسترسی به فایل
+                      Stream Failed
                     </span>
                   )}
                 </span>
 
                 <div className="flex items-center gap-3 font-mono text-[11px]">
-                  <span className="text-slate-400">کیفیت: <strong className="text-white">{testResult.resolution}</strong></span>
-                  <span className="text-slate-400">تاخیر اسیک: <strong className="text-[#c5a880]">{testResult.seekTimeMs}ms</strong></span>
+                  <span className="text-slate-400">Resolution: <strong className="text-white">{testResult.resolution}</strong></span>
+                  <span className="text-slate-400">Seek Latency: <strong className="text-[#c5a880]">{testResult.seekTimeMs}ms</strong></span>
                 </div>
               </div>
 
               {/* Status Pills */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                 <div className="p-2.5 rounded-lg bg-[#141622] border border-white/5 flex items-center justify-between">
-                  <span className="text-slate-400">۱. لود استریم فایل:</span>
+                  <span className="text-slate-400">1. Stream Loading:</span>
                   {testResult.directUrl === 'pass' ? (
-                    <span className="text-emerald-400 font-bold">موفقیت‌آمیز ✅</span>
+                    <span className="text-emerald-400 font-bold">Pass ✅</span>
                   ) : (
-                    <span className="text-rose-400 font-bold">ناموفق ❌</span>
+                    <span className="text-rose-400 font-bold">Fail ❌</span>
                   )}
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-[#141622] border border-white/5 flex items-center justify-between">
-                  <span className="text-slate-400">۲. امنیت و لایه ویدیو:</span>
+                  <span className="text-slate-400">2. Security Layer:</span>
                   <span className="text-emerald-400 font-bold">
-                    {testResult.isDirectMode ? 'بای‌پس هوشمند CORS (فعال)' : 'سازگار با Canvas ✅'}
+                    {testResult.isDirectMode ? 'Direct Hardware Mode' : 'Canvas Compatible ✅'}
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-[#141622] border border-white/5 flex items-center justify-between">
-                  <span className="text-slate-400">۳. کلیدفریم‌ها (GOP):</span>
+                  <span className="text-slate-400">3. Keyframe Interval (GOP):</span>
                   {testResult.seekPerformance === 'excellent' ? (
-                    <span className="text-emerald-400 font-bold">عالی (Instant ⚡)</span>
+                    <span className="text-emerald-400 font-bold">Instant (⚡)</span>
                   ) : testResult.seekPerformance === 'good' ? (
-                    <span className="text-emerald-400 font-bold">روان و خوب 👍</span>
+                    <span className="text-emerald-400 font-bold">Smooth (👍)</span>
                   ) : (
-                    <span className="text-amber-400 font-bold">متوسط</span>
+                    <span className="text-amber-400 font-bold">Moderate</span>
                   )}
                 </div>
               </div>
@@ -453,16 +442,16 @@ location ~* \\.(mp4|webm|ogg)$ {
                 ))}
               </div>
 
-              {/* Interactive Live Scrub Player if video loaded */}
+              {/* Interactive Live Scrub Player */}
               {testResult.corsStatus === 'pass' && (
                 <div className="pt-2 border-t border-white/10 space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-white font-semibold flex items-center gap-1.5">
                       <Gauge className="w-3.5 h-3.5 text-[#c5a880]" />
-                      <span>تست زنده اسکرول ویدیو (برای حرکت به جلو و عقب اسلایدر را بکشید):</span>
+                      <span>Live Scrub Test (drag slider forward & backward):</span>
                     </span>
                     <span className="font-mono text-[#c5a880] text-[11px] font-bold">
-                      {Math.round(testProgress * 100)}% پیشرفت
+                      {Math.round(testProgress * 100)}% progress
                     </span>
                   </div>
 
@@ -488,7 +477,7 @@ location ~* \\.(mp4|webm|ogg)$ {
                   {/* Apply to Walkthrough Tour Button */}
                   <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#131622] p-3 rounded-xl border border-white/10">
                     <div className="text-slate-300 text-xs">
-                      می‌خواهید این ویدیو را بلافاصله در تور مجازی اصلی ملک مشاهده کنید؟
+                      Ready to apply this video to your active property walkthrough?
                     </div>
 
                     <button
@@ -498,12 +487,12 @@ location ~* \\.(mp4|webm|ogg)$ {
                       {appliedSuccess ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-800" />
-                          <span>ویدیو روی تور قرار گرفت! در تب Walkthrough بررسی کنید</span>
+                          <span>Applied! View it in the Walkthrough tab</span>
                         </>
                       ) : (
                         <>
                           <ArrowRight className="w-4 h-4" />
-                          <span>اعمال روی تور مجازی (Apply to Walkthrough)</span>
+                          <span>Apply to Walkthrough</span>
                         </>
                       )}
                     </button>
@@ -514,74 +503,71 @@ location ~* \\.(mp4|webm|ogg)$ {
           )}
         </div>
 
-        {/* SECTION 2: WHY GSAP VIDEOS WORK SEAMLESSLY NOW */}
+        {/* SECTION 2: ARCHITECTURE & CORS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          {/* Card A: How VibeTour Pro solves CORS & Codec */}
           <div className="bg-[#161822] p-5 rounded-2xl border border-white/10 space-y-3.5 shadow-xl">
             <div className="flex items-center gap-2 pb-2 border-b border-white/10">
               <FileVideo className="w-4 h-4 text-[#c5a880]" />
               <h3 className="font-display text-sm font-bold text-white">
-                سیستم چگونه خطای CORS را به صورت خودکار برطرف می‌کند؟
+                How VibeTour Pro Guarantees Zero-Blackscreen Playback
               </h3>
             </div>
 
             <div className="space-y-3 text-xs leading-relaxed">
               <div className="p-3 rounded-xl bg-[#0d0f16] border border-white/5 space-y-1">
                 <span className="font-bold text-[#c5a880] block text-xs">
-                  ۱. معماری دولایه هوشمند (Smart Dual-Layer):
+                  1. Smart Dual-Layer Pipeline:
                 </span>
                 <p className="text-slate-300 text-[11px]">
-                  اگر هاست شما هدرهای CORS نداشته باشد، افزونه به صورت خودکار لایه رندر را روی لایه مستقیم سخت‌افزاری (Direct DOM Layer) سوئیچ می‌کند. بدین ترتیب مرورگر ویدیو را بدون هیچ اروری لود کرده و با اسکرول کاربر سینک می‌کند.
+                  If your media server lacks CORS headers, the player automatically falls back to the Direct Hardware DOM element layer. This allows the video to play and scrub smoothly without CORS blocking.
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-[#0d0f16] border border-white/5 space-y-1">
                 <span className="font-bold text-[#c5a880] block text-xs">
-                  ۲. نقاط تعاملی متریال‌ها روی کانواس شفاف:
+                  2. Transparent Kinetic Overlay:
                 </span>
                 <p className="text-slate-300 text-[11px]">
-                  کانواس به حالت Transparent تبدیل شده و تمام نقاط الماسی متریال‌ها، افکت‌های نوری و هشدارهای توضیحات دقیقاً روی ویدیوی شما به صورت زنده نمایش داده می‌شوند.
+                  Material swatches, hotspot pins, and checkpoint portals are drawn on a transparent high-DPI canvas directly above the video stream.
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-[#0d0f16] border border-white/5 space-y-1">
                 <span className="font-bold text-[#c5a880] block text-xs">
-                  ۳. هماهنگی با صحنه‌های کلیدی GSAP:
+                  3. Keyframe Synchronization:
                 </span>
                 <p className="text-slate-300 text-[11px]">
-                  ویدیوهایی که با ابزارهای GSAP ساخته شده‌اند، با فرمول زمانی <code className="text-[#c5a880]">currentTime = progress * duration</code> در کمال نرمی به جلو و عقب حرکت می‌کنند.
+                  Scrubbing math synchronizes scroll progress with <code className="text-[#c5a880]">currentTime = progress * duration</code> for silky smooth reverse and forward navigation.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Card B: Server CORS & Host Configuration */}
           <div className="bg-[#161822] p-5 rounded-2xl border border-white/10 space-y-3.5 shadow-xl">
             <div className="flex items-center gap-2 pb-2 border-b border-white/10">
               <Server className="w-4 h-4 text-[#c5a880]" />
               <h3 className="font-display text-sm font-bold text-white">
-                اختیاری: کدهای تنظیم CORS در وردپرس (جهت بهینه‌سازی بیشتر):
+                Optional: Server CORS Configuration
               </h3>
             </div>
 
             <p className="text-slate-300 text-xs leading-relaxed">
-              اگر تمایل دارید هاست شما به تمام دامنه‌ها اجازه دسترسی مستقیم فریم بدهد، می‌توانید کدهای زیر را در هاست خود قرار دهید (الزامی نیست زیرا سیستم بدون آن هم به خوبی کار می‌کند):
+              If you wish to configure your web server to serve byte-range requests with open headers, place these snippets in your server config:
             </p>
 
             {/* .htaccess code block */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 font-semibold font-mono text-[11px]">کد .htaccess (Apache / لایت‌اسپید):</span>
+                <span className="text-slate-300 font-semibold font-mono text-[11px]">Apache / LiteSpeed (.htaccess):</span>
                 <button
                   onClick={() => copyToClipboard(htaccessCode, 'htaccess')}
                   className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-[#c5a880] flex items-center gap-1"
                 >
                   {copiedSection === 'htaccess' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>کپی کد</span>
+                  <span>Copy Code</span>
                 </button>
               </div>
-              <pre className="p-2.5 bg-[#090a0f] rounded-xl border border-white/10 font-mono text-[10px] text-slate-300 overflow-x-auto select-all" dir="ltr">
+              <pre className="p-2.5 bg-[#090a0f] rounded-xl border border-white/10 font-mono text-[10px] text-slate-300 overflow-x-auto select-all">
                 <code>{htaccessCode}</code>
               </pre>
             </div>
@@ -589,16 +575,16 @@ location ~* \\.(mp4|webm|ogg)$ {
             {/* Nginx code block */}
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 font-semibold font-mono text-[11px]">کد سرورهای Nginx:</span>
+                <span className="text-slate-300 font-semibold font-mono text-[11px]">Nginx Configuration:</span>
                 <button
                   onClick={() => copyToClipboard(nginxCode, 'nginx')}
                   className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-[#c5a880] flex items-center gap-1"
                 >
                   {copiedSection === 'nginx' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>کپی کد</span>
+                  <span>Copy Code</span>
                 </button>
               </div>
-              <pre className="p-2.5 bg-[#090a0f] rounded-xl border border-white/10 font-mono text-[10px] text-slate-300 overflow-x-auto select-all" dir="ltr">
+              <pre className="p-2.5 bg-[#090a0f] rounded-xl border border-white/10 font-mono text-[10px] text-slate-300 overflow-x-auto select-all">
                 <code>{nginxCode}</code>
               </pre>
             </div>
@@ -611,7 +597,7 @@ location ~* \\.(mp4|webm|ogg)$ {
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-[#c5a880]" />
               <h3 className="font-display text-sm font-bold text-white">
-                دستور فوق‌سریع FFmpeg برای ویدیوهای اسکرولی و GSAP:
+                Ultra-Fast FFmpeg Command for Kinetic Scrubbing Videos:
               </h3>
             </div>
             <button
@@ -619,11 +605,11 @@ location ~* \\.(mp4|webm|ogg)$ {
               className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[#c5a880] font-semibold text-xs flex items-center gap-1.5 transition-colors"
             >
               {copiedSection === 'ffmpeg' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>کپی دستور ترمینال</span>
+              <span>Copy Command</span>
             </button>
           </div>
 
-          <pre className="p-3 bg-[#090a0f] rounded-xl border border-white/10 font-mono text-[11px] text-[#c5a880] overflow-x-auto select-all" dir="ltr">
+          <pre className="p-3 bg-[#090a0f] rounded-xl border border-white/10 font-mono text-[11px] text-[#c5a880] overflow-x-auto select-all">
             <code>{ffmpegCommandUltraFast}</code>
           </pre>
         </div>

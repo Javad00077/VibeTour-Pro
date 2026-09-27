@@ -33,6 +33,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReset = () => {
     try {
+      localStorage.removeItem('vbt_properties_v2');
+      localStorage.removeItem('vbt_config_v2');
+      localStorage.removeItem('vbt_selected_property_id_v2');
+      localStorage.removeItem('vbt_active_room_id_v2');
       localStorage.removeItem('vbt_persisted_properties_v1');
       localStorage.removeItem('vbt_persisted_config_v1');
     } catch {
@@ -56,10 +60,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-white font-serif">
-                خطا در بارگذاری اولیه وب‌تور
+                Virtual Tour Initialization Error
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed">
-                متأسفانه مشکلی در بارگذاری اسکریپت یا داده‌های ذخیره‌شده رخ داده است. با کلیک روی دکمه زیر می‌توانید صفحه را مجدداً لود کنید.
+                An unexpected issue occurred while rendering the interactive engine. Click below to reload the experience safely.
               </p>
             </div>
 
@@ -70,7 +74,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#b3956d] text-black font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>بارگذاری مجدد وب‌تور</span>
+                <span>Reload Virtual Tour</span>
               </button>
 
               <button
@@ -79,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs flex items-center justify-center gap-2 border border-white/10 transition-all cursor-pointer"
               >
                 <Home className="w-3.5 h-3.5 text-amber-400" />
-                <span>بازیابی تنظیمات اولیه و پاک‌سازی کش</span>
+                <span>Reset to Factory Defaults & Clear Cache</span>
               </button>
             </div>
           </div>

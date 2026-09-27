@@ -103,11 +103,11 @@ export const authService = {
     if (isUsernameMatch && isPasswordMatch) {
       const adminUser: AdminUser = {
         username: creds.username,
-        displayName: 'مدیر کل سامانه (Admin)',
+        displayName: 'System Administrator (Admin)',
         role: 'Super Admin',
         authProvider: 'credentials',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-        lastLogin: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+        lastLogin: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       };
       this.setSession(adminUser);
       return { success: true, user: adminUser };
@@ -115,14 +115,14 @@ export const authService = {
 
     return { 
       success: false, 
-      error: 'نام کاربری یا رمز عبور اشتباه است. (پیش‌فرض: نام کاربری admin و رمز admin)' 
+      error: 'Invalid username or password. (Default credentials: admin / admin)' 
     };
   },
 
   // Authenticate with Google / Gmail
   loginWithGoogle(emailInput?: string, nameInput?: string, photoUrl?: string): { success: boolean; user: AdminUser } {
     const defaultEmail = emailInput || 'kazeme.javad@gmail.com';
-    const displayName = nameInput || (defaultEmail.includes('kazeme') ? 'جواد کاظمی (مدیر ارشد)' : 'کاربر ویژه گوگل');
+    const displayName = nameInput || (defaultEmail.includes('kazeme') ? 'Javad Kazemi (Super Admin)' : 'Google Administrator');
     const avatar = photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80';
 
     const googleUser: AdminUser = {
@@ -132,7 +132,7 @@ export const authService = {
       role: 'Super Admin',
       authProvider: 'google',
       avatar,
-      lastLogin: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+      lastLogin: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
 
     this.setSession(googleUser);
@@ -154,22 +154,22 @@ export const authService = {
     const isGoogleAuth = session.user?.authProvider === 'google';
 
     if (!isCurPassValid && !isGoogleAuth) {
-      return { success: false, error: 'رمز عبور فعلی وارد شده نادرست است.' };
+      return { success: false, error: 'Current password entered is incorrect.' };
     }
 
     const cleanNewUser = newUsernameInput.trim();
     const cleanNewPass = newPasswordInput.trim();
 
     if (cleanNewUser.length < 3) {
-      return { success: false, error: 'نام کاربری جدید باید حداقل ۳ کاراکتر باشد.' };
+      return { success: false, error: 'New username must contain at least 3 characters.' };
     }
     if (cleanNewPass.length < 4) {
-      return { success: false, error: 'رمز عبور جدید باید حداقل ۴ کاراکتر باشد.' };
+      return { success: false, error: 'New password must contain at least 4 characters.' };
     }
 
     const saved = this.setCredentials(cleanNewUser, cleanNewPass);
     if (!saved) {
-      return { success: false, error: 'خطا در ذخیره‌سازی مشخصات جدید در مرورگر.' };
+      return { success: false, error: 'Failed to write credentials to local storage.' };
     }
 
     // Also update active session if logged in via credentials
@@ -177,7 +177,7 @@ export const authService = {
       const updatedUser: AdminUser = {
         ...session.user,
         username: cleanNewUser,
-        displayName: `${cleanNewUser} (مدیر سامانه)`,
+        displayName: `${cleanNewUser} (Administrator)`,
       };
       this.setSession(updatedUser);
     }

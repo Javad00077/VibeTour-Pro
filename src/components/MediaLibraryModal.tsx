@@ -136,7 +136,7 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
   onClose,
   onSelect,
   onSelectMedia,
-  title = 'WordPress Media Library / کتابخانه رسانه وردپرس',
+  title = 'WordPress Media Library',
   filterType = 'all'
 }) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'video' | 'image'>(filterType);

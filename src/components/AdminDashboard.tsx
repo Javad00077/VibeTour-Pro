@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { PropertyListing, Room, PluginConfig, AdminUser, Hotspot, MaterialItem, ActiveTab } from '../types';
 import { authService, StoredCredentials } from '../utils/authService';
+import { StorageService } from '../services/storageService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
 
@@ -88,6 +89,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Dashboard Active Tab
   const [adminTab, setAdminTab] = useState<AdminTab>('profiles');
 
+  // Saving All to Storage State
+  const [isSavingAll, setIsSavingAll] = useState<boolean>(false);
+
   // Feedback Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -110,7 +114,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newPropTitle, setNewPropTitle] = useState<string>('');
   const [newPropTitleFa, setNewPropTitleFa] = useState<string>('');
   const [newPropPrice, setNewPropPrice] = useState<string>('$38,500,000');
-  const [newPropLocation, setNewPropLocation] = useState<string>('تهران، الهیه، فرشته');
+  const [newPropLocation, setNewPropLocation] = useState<string>('Beverly Hills, California');
   const [newPropBeds, setNewPropBeds] = useState<number>(5);
   const [newPropBaths, setNewPropBaths] = useState<number>(6);
   const [newPropSqft, setNewPropSqft] = useState<number>(10800);
@@ -149,9 +153,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setCurrentUser(res.user);
         setNewUsernameInput(res.user.username);
         if (onAuthChange) onAuthChange(true);
-        showToast('ورود با موفقیت انجام شد. به پنل مدیریت خوش آمدید.');
+        showToast('Successfully signed in. Welcome to Admin Control Panel.');
       } else {
-        setLoginError(res.error || 'اطلاعات ورود اشتباه است.');
+        setLoginError(res.error || 'Invalid username or password.');
         soundEngine.triggerHapticChime(320);
       }
       setIsLoggingIn(false);
@@ -171,7 +175,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setCurrentUser(res.user);
         setNewUsernameInput(res.user.username);
         if (onAuthChange) onAuthChange(true);
-        showToast(`ورود با حساب گوگل (${targetEmail}) با موفقیت تایید شد.`);
+        showToast(`Signed in with Google (${targetEmail}) confirmed successfully.`);
       }
       setIsLoggingIn(false);
     }, 500);
@@ -183,7 +187,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setIsAuthenticated(false);
     setCurrentUser(null);
     if (onAuthChange) onAuthChange(false);
-    showToast('از حساب کاربری خارج شدید.');
+    showToast('Signed out successfully.');
   };
 
   // Change Credentials (Username & Password)
@@ -194,7 +198,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (newPasswordInput && newPasswordInput !== confirmPasswordInput) {
       setSecurityStatus({
         type: 'error',
-        message: 'رمز عبور جدید با تکرار آن همخوانی ندارد.',
+        message: 'New password does not match confirmation.',
       });
       soundEngine.triggerHapticChime(320);
       return;
@@ -213,16 +217,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (res.success) {
       setSecurityStatus({
         type: 'success',
-        message: 'نام کاربری و رمز عبور با موفقیت به‌روزرسانی شدند.',
+        message: 'Username and password updated successfully.',
       });
       setCurrentPasswordForUpdate('');
       setNewPasswordInput('');
       setConfirmPasswordInput('');
-      showToast('مشخصات حساب جدید در سیستم ذخیره گردید.');
+      showToast('New account credentials saved to system.');
     } else {
       setSecurityStatus({
         type: 'error',
-        message: res.error || 'خطا در تغییر مشخصات.',
+        message: res.error || 'Error updating credentials.',
       });
       soundEngine.triggerHapticChime(320);
     }
@@ -230,7 +234,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Reset Credentials to factory default (admin / admin)
   const handleResetToDefault = () => {
-    if (window.confirm('آیا از بازنشانی نام کاربری و رمز عبور به حالت پیش‌فرض (admin / admin) اطمینان دارید؟')) {
+    if (window.confirm('Are you sure you want to reset credentials to default (admin / admin)?')) {
       authService.resetToDefaultCredentials();
       setUsernameInput('admin');
       setPasswordInput('admin');
@@ -240,9 +244,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setConfirmPasswordInput('');
       setSecurityStatus({
         type: 'success',
-        message: 'مشخصات ورود به حالت اولیه کارخانه (نام کاربری admin / رمز admin) بازنشانی شد.',
+        message: 'Credentials reset to factory defaults (admin / admin).',
       });
-      showToast('اطلاعات ورود به حالت پیش‌فرض بازگردانی شد.');
+      showToast('Credentials restored to defaults.');
     }
   };
 
@@ -253,7 +257,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       [field]: value,
     };
     onUpdateProperty(updated);
-    showToast(`تغییرات بخش «${String(field)}» ذخیره گردید.`);
+    showToast(`Changes to field «${String(field)}» saved permanently.`);
   };
 
   // Room field updater
@@ -269,10 +273,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       rooms: updatedRooms,
     };
     onUpdateProperty(updatedProperty);
-    showToast('تنظیمات فضا و ویدیو به‌روز شد.');
+    showToast('Chamber and video settings updated.');
   };
 
-  // Broker & Personnel field updater (تنظیمات مشاور، عکس افراد و متن‌ها)
+  // Broker & Personnel field updater (Broker, Personnel & Contacts)
   const handleUpdateBrokerField = (field: string, value: string) => {
     const updated = {
       ...currentProperty,
@@ -282,14 +286,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     };
     onUpdateProperty(updated);
-    showToast(`مشخصات مشاور (${field}) ذخیره گردید.`);
+    showToast(`Broker detail (${field}) saved permanently.`);
   };
 
   // Add new property profile
   const handleCreateProperty = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPropTitle.trim()) {
-      showToast('لطفاً عنوان انگلیسی یا لاتین ملک را وارد نمایید.');
+      showToast('Please enter a property title.');
       return;
     }
     const id = 'prop-' + Date.now();
@@ -303,9 +307,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       title: newPropTitle.trim(),
       titleFa: newPropTitleFa.trim() || newPropTitle.trim(),
       subtitle: 'Ultra-Luxury Kinetic Walkthrough Residence',
-      subtitleFa: 'عمارت باشکوه با تور تعاملی سینمایی',
+      subtitleFa: 'Exclusive architectural estate with interactive tour',
       tagline: 'Exclusive Architectural Trophy Estate',
-      location: newPropLocation.trim() || 'تهران، زعفرانیه',
+      location: newPropLocation.trim() || 'Monaco, Monte-Carlo',
       price: newPropPrice.trim() || '$30,000,000',
       numericPrice: 30000000,
       currency: '$',
@@ -318,8 +322,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       heroImage: newPropHero,
       rooms: clonedRooms,
       broker: {
-        name: currentProperty.broker?.name || 'مهندس جواد کاظمی',
-        title: 'مدیر ارشد کارگزاری املاک لوکس',
+        name: currentProperty.broker?.name || 'Javad Kazemi',
+        title: 'Senior Vice President of Luxury Estates',
         agency: currentProperty.broker?.agency || 'VibeTour Sotheby’s Luxury',
         phone: currentProperty.broker?.phone || '+98 912 000 0000',
         email: currentProperty.broker?.email || 'kazeme.javad@gmail.com',
@@ -332,7 +336,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setShowAddProfileModal(false);
     setNewPropTitle('');
     setNewPropTitleFa('');
-    showToast(`پروفایل جدید «${newProp.titleFa}» افزوده و فعال گردید.`);
+    showToast(`New property «${newProp.title}» created and activated.`);
   };
 
   // Duplicate an existing property profile
@@ -342,24 +346,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       ...p,
       id,
       title: `${p.title} (Clone)`,
-      titleFa: `${p.titleFa || p.title} (نسخه جدید)`,
+      titleFa: `${p.titleFa || p.title} (Duplicate)`,
       mlsNumber: 'VBT-' + Math.floor(100000 + Math.random() * 900000),
       rooms: p.rooms.map((r, idx) => ({ ...r, id: `${id}-room-${idx + 1}` }))
     };
     if (onAddProperty) onAddProperty(dup);
     onSelectProperty(dup);
-    showToast('پروفایل با موفقیت تکثیر شد.');
+    showToast('Property profile duplicated successfully.');
   };
 
   // Delete property profile
   const handleDeletePropertyConfirm = (id: string, name: string) => {
     if (properties.length <= 1) {
-      alert('حداقل یک پروفایل ملک باید در سامانه باقی بماند.');
+      alert('At least one property profile must remain in system.');
       return;
     }
-    if (window.confirm(`آیا از حذف پروفایل «${name}» اطمینان دارید؟`)) {
+    if (window.confirm(`Are you sure you want to delete profile «${name}»?`)) {
       if (onDeleteProperty) onDeleteProperty(id);
-      showToast(`پروفایل «${name}» حذف گردید.`);
+      showToast(`Property profile «${name}» deleted.`);
     }
   };
 
@@ -395,7 +399,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     a.download = `vibetour-config-${currentProperty.id}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('فایل پشتیبان تنظیمات با موفقیت دانلود شد.');
+    showToast('Configuration backup JSON downloaded successfully.');
+  };
+
+  // Save All to Persistent Storage (LocalStorage + IndexedDB + Backend API)
+  const handleSaveAll = async () => {
+    setIsSavingAll(true);
+    try {
+      await StorageService.saveProperties(properties);
+      await StorageService.saveConfig(config);
+      await StorageService.saveActiveState(currentProperty.id, selectedRoomId);
+      showToast('All property tours, chambers and settings permanently saved to storage & backend!');
+    } catch {
+      showToast('Could not complete storage save.');
+    } finally {
+      setIsSavingAll(false);
+    }
   };
 
   // ==========================================
@@ -413,13 +432,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c5a880]/15 border border-[#c5a880]/40 text-[#c5a880] text-xs font-mono font-bold uppercase tracking-wider">
               <Shield className="w-4 h-4 text-[#c5a880]" />
-              <span>مرکز کنترل و مدیریت VibeTour Pro</span>
+              <span>VibeTour Pro Control Center</span>
             </div>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-wide">
-              ورود به داشبورد مدیریت
+              Administrator Sign In
             </h2>
             <p className="text-xs text-slate-300 font-light max-w-md mx-auto leading-relaxed">
-              جهت اعمال تغییرات بر روی نمای عمارت، ویدیوهای تور، نقاط ایستگاه و تنظیمات حرکتی، با حساب جیمیل یا نام کاربری وارد شوید.
+              Sign in with your Google account or credentials to configure facades, tour videos, checkpoint gates, and kinetic motion physics.
             </p>
           </div>
 
@@ -437,7 +456,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               <Mail className="w-4 h-4" />
-              <span>ورود با جیمیل (Google)</span>
+              <span>Sign in with Google</span>
             </button>
 
             <button
@@ -452,7 +471,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               <Key className="w-4 h-4" />
-              <span>نام کاربری و رمز عبور</span>
+              <span>Username & Password</span>
             </button>
           </div>
 
@@ -478,9 +497,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-white">جواد کاظمی</span>
+                        <span className="text-sm font-bold text-white">Javad Kazemi</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
-                          مدیر ارشد
+                          Super Admin
                         </span>
                       </div>
                       <p className="text-xs text-[#c5a880] font-mono mt-0.5">
@@ -519,13 +538,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="w-full py-2.5 rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-[#c5a880]/20"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>ورود مستقیم با این حساب جیمیل (Sign in with Google)</span>
+                  <span>Sign in with this Google account</span>
                 </button>
               </div>
 
               {/* Or enter alternative Gmail */}
               <div className="space-y-1.5 pt-1">
-                <label className="text-xs text-slate-300 block">یا ورود با آدرس جیمیل دیگر:</label>
+                <label className="text-xs text-slate-300 block">Or sign in with an alternative Google email:</label>
                 <div className="flex gap-2">
                   <input
                     type="email"
@@ -540,14 +559,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     disabled={isLoggingIn}
                     className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/20"
                   >
-                    ورود
+                    Sign In
                   </button>
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-slate-400 flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#c5a880] shrink-0" />
-                <span>احراز هویت از طریق پروتکل امن گوگل با دسترسی مدیر ارشد برای ویرایش مشخصات نما و ویدیوها صورت می‌پذیرد.</span>
+                <span>Authenticated securely via Google OAuth with Super Admin management rights.</span>
               </div>
             </div>
           )}
@@ -558,7 +577,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs text-slate-300 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-[#c5a880]" />
-                  <span>نام کاربری (Username):</span>
+                  <span>Username:</span>
                 </label>
                 <input
                   type="text"
@@ -574,7 +593,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="flex items-center justify-between text-xs">
                   <label className="text-slate-300 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
-                    <span>رمز عبور (Password):</span>
+                    <span>Password:</span>
                   </label>
                   <button
                     type="button"
@@ -582,7 +601,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="text-slate-400 hover:text-white flex items-center gap-1 text-[11px]"
                   >
                     {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                    <span>{showPassword ? 'پنهان کردن' : 'نمایش'}</span>
+                    <span>{showPassword ? 'Hide' : 'Show'}</span>
                   </button>
                 </div>
                 <input
@@ -599,11 +618,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="p-3 rounded-xl bg-[#c5a880]/10 border border-[#c5a880]/30 text-xs text-slate-200 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-[#c5a880]">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  <span>اطلاعات ورود پیش‌فرض مدیر سامانه:</span>
+                  <span>Default Admin Credentials:</span>
                 </div>
                 <div className="flex items-center justify-between font-mono text-[11px] pt-1">
-                  <span>نام کاربری: <strong className="text-white">admin</strong></span>
-                  <span>رمز عبور: <strong className="text-white">admin</strong> (یا admin123)</span>
+                  <span>Username: <strong className="text-white">admin</strong></span>
+                  <span>Password: <strong className="text-white">admin</strong> (or admin123)</span>
                 </div>
               </div>
 
@@ -613,17 +632,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] hover:from-[#e6d5bd] hover:to-[#c5a880] text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#c5a880]/20"
               >
                 <Key className="w-4 h-4" />
-                <span>{isLoggingIn ? 'در حال تایید اعتبار...' : 'ورود به پنل مدیریت'}</span>
+                <span>{isLoggingIn ? 'Authenticating...' : 'Sign In as Administrator'}</span>
               </button>
 
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-white/10">
-                <span>امکان تغییر نام کاربری و رمز در داخل داشبورد فراهم است.</span>
+                <span>You can change credentials anytime in the Security tab.</span>
                 <button
                   type="button"
                   onClick={handleResetToDefault}
                   className="text-[#c5a880] hover:underline"
                 >
-                  بازنشانی به پیش‌فرض
+                  Reset to Defaults
                 </button>
               </div>
             </form>
@@ -635,7 +654,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onClick={onNavigateToWalkthrough}
               className="text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 mx-auto transition-colors"
             >
-              <span>بازگشت به تور بازدید زنده</span>
+              <span>Return to Live Walkthrough Tour</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -673,7 +692,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-display text-base sm:text-lg font-bold text-white">
-                {currentUser?.displayName || 'مدیر کل سامانه'}
+                {currentUser?.displayName || 'System Administrator'}
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-[#c5a880]/20 text-[#c5a880] text-[10px] font-mono font-bold border border-[#c5a880]/40">
                 {currentUser?.role || 'Super Admin'}
@@ -682,11 +701,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
               <span className="font-mono text-[11px] text-[#e6d5bd]">
-                {currentUser?.email ? currentUser.email : `یوزر: ${currentUser?.username}`}
+                {currentUser?.email ? currentUser.email : `User: ${currentUser?.username}`}
               </span>
               <span>•</span>
               <span className="text-[11px] text-slate-400">
-                روش ورود: {currentUser?.authProvider === 'google' ? 'جیمیل تایید شده' : 'نام کاربری/رمز'}
+                Sign In Method: {currentUser?.authProvider === 'google' ? 'Verified Google Account' : 'Username / Password'}
               </span>
             </div>
           </div>
@@ -694,6 +713,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Top Header Actions */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+          {/* Storage Sync Status Pill */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-[11px]">Storage Synced</span>
+          </div>
+
+          {/* Explicit Save & Sync Button */}
+          <button
+            onClick={handleSaveAll}
+            disabled={isSavingAll}
+            title="Save all changes to LocalStorage, IndexedDB & Backend"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#b3956d] text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#c5a880]/20 hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+          >
+            <Save className={`w-3.5 h-3.5 ${isSavingAll ? 'animate-spin' : ''}`} />
+            <span>{isSavingAll ? 'Saving...' : 'Save & Sync All'}</span>
+          </button>
+
           <button
             onClick={() => setAdminTab('security')}
             className={`px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all ${
@@ -703,7 +739,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }`}
           >
             <Key className="w-3.5 h-3.5 text-[#c5a880]" />
-            <span>تغییر رمز و یوزر</span>
+            <span>Security & Credentials</span>
           </button>
 
           <button
@@ -711,12 +747,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-all border border-white/20"
           >
             <Compass className="w-3.5 h-3.5 text-[#c5a880]" />
-            <span>مشاهده تور زنده</span>
+            <span>View Live Tour</span>
           </button>
 
           <button
             onClick={handleExportJSON}
-            title="دانلود نسخه پشتیبان تنظیمات JSON"
+            title="Download JSON Backup"
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/10"
           >
             <Download className="w-4 h-4" />
@@ -727,7 +763,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             className="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all border border-rose-500/30"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>خروج</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
@@ -743,7 +779,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <Building2 className="w-4 h-4" />
-          <span>پروفایل‌ها، مشاور و متن‌ها (Profiles & Agent)</span>
+          <span>Property Profiles & Agent</span>
         </button>
 
         <button
@@ -755,7 +791,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <Building className="w-4 h-4" />
-          <span>تنظیمات و تغییرات نما (Exterior Facade)</span>
+          <span>Exterior Facade & Overview</span>
         </button>
 
         <button
@@ -767,7 +803,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <Film className="w-4 h-4" />
-          <span>تنظیمات ویدیوها و فضاها (Video Chambers)</span>
+          <span>Chambers & 360 Video Scrubbing</span>
         </button>
 
         <button
@@ -779,7 +815,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <Gauge className="w-4 h-4" />
-          <span>موتور حرکتی، سرعت و تم</span>
+          <span>Motion Dynamics & Theme</span>
         </button>
 
         <button
@@ -791,7 +827,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <Sliders className="w-4 h-4" />
-          <span>ابزارهای پیشرفته و المنتور (Builder & Tools)</span>
+          <span>Sync, Tools & Storage</span>
         </button>
 
         <button
@@ -803,12 +839,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <Shield className="w-4 h-4" />
-          <span>امنیت، تغییر یوزر/رمز و جیمیل</span>
+          <span>Security & Credentials</span>
         </button>
       </div>
 
       {/* ======================================================== */}
-      {/* TAB 0: PROPERTY PROFILES, AGENT & TEXTS (پروفایل‌ها، مشاور و متن‌ها) */}
+      {/* TAB 0: PROPERTY PROFILES, AGENT & TEXTS (Property Profiles, Broker & Copy) */}
       {/* ======================================================== */}
       {adminTab === 'profiles' && (
         <div className="space-y-8 animate-in fade-in duration-300">
@@ -819,11 +855,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-[#c5a880]" />
                 <h3 className="text-base font-bold text-white">
-                  مدیریت پروفایل‌های املاک، مشاور و متن‌ها
+                  Property Profiles, Broker & Marketing Copy
                 </h3>
               </div>
               <p className="text-xs text-slate-300">
-                این بخش منحصراً برای مدیر کل فعال است. افزودن ملک جدید، ویرایش اطلاعات و تصویر مشاورین و متون معرفی در این بخش انجام می‌شود.
+Manage properties, configure broker profiles, and customize marketing copy across tours.     ‌.
               </p>
             </div>
 
@@ -832,7 +868,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#b3956d] text-black font-bold text-xs flex items-center gap-2 shadow-lg hover:scale-105 transition-transform shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>افزودن ملک و پروفایل جدید</span>
+              <span>Add New Property</span>
             </button>
           </div>
 
@@ -841,10 +877,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-[#c5a880]" />
-                <span>لیست املاک ثبت‌شده در سامانه ({properties.length} ملک):</span>
+                <span>Registered Property Listings ({properties.length} Properties):</span>
               </h4>
               <span className="text-[11px] text-slate-400">
-                جهت فعال‌سازی هر ملک در تور، روی «انتخاب جهت ویرایش و تور» کلیک کنید.
+                Click on any listing below to activate and configure its virtual tour.
               </span>
             </div>
 
@@ -878,17 +914,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       {isActive && (
                         <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1 shadow">
                           <Check className="w-3 h-3" />
-                          <span>ملک فعال در تور</span>
+                          <span>Active in Tour</span>
                         </div>
                       )}
 
                       {/* Specs Badge */}
                       <div className="absolute bottom-2 right-2.5 text-[11px] text-slate-200 flex items-center gap-2">
-                        <span>{prop.beds} خواب</span>
+                        <span>{prop.beds} Beds</span>
                         <span>•</span>
-                        <span>{prop.baths} حمام</span>
+                        <span>{prop.baths} Baths</span>
                         <span>•</span>
-                        <span>{prop.sqft.toLocaleString()} فوت مربع</span>
+                        <span>{prop.sqft.toLocaleString()} Sq Ft</span>
                       </div>
                     </div>
 
@@ -912,7 +948,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button
                           onClick={() => {
                             onSelectProperty(prop);
-                            showToast(`ملک «${prop.titleFa || prop.title}» جهت ویرایش و تور انتخاب شد.`);
+                            showToast(`Property «${prop.title}» activated for editing and tour.`);
                           }}
                           className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                             isActive
@@ -921,12 +957,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           }`}
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
-                          <span>{isActive ? 'در حال ویرایش' : 'انتخاب ملک'}</span>
+                          <span>{isActive ? 'Active Tour' : 'Select Property'}</span>
                         </button>
 
                         <button
                           onClick={() => handleDuplicateProperty(prop)}
-                          title="تکثیر این پروفایل ملک"
+                          title="Duplicate this property profile"
                           className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-colors border border-white/10"
                         >
                           <Copy className="w-3.5 h-3.5" />
@@ -935,7 +971,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {properties.length > 1 && (
                           <button
                             onClick={() => handleDeletePropertyConfirm(prop.id, prop.titleFa || prop.title)}
-                            title="حذف این پروفایل ملک"
+                            title="Delete this property profile"
                             className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors border border-rose-500/20"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -955,7 +991,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center gap-2">
                 <Building className="w-4 h-4 text-[#c5a880]" />
                 <h4 className="text-sm font-bold text-white">
-                  ویرایش مشخصات و متن‌های ملک فعال: «{currentProperty.titleFa || currentProperty.title}»
+                  Edit Active Property Specifications: «{currentProperty.titleFa || currentProperty.title}»
                 </h4>
               </div>
               <span className="text-xs font-mono text-[#c5a880]">ID: {currentProperty.id}</span>
@@ -966,7 +1002,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* Titles & Texts Column */}
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300">عنوان ملک به فارسی:</label>
+                  <label className="text-xs text-slate-300">Subtitle / Persian Display Title:</label>
                   <input
                     type="text"
                     value={currentProperty.titleFa || ''}
@@ -976,7 +1012,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300">عنوان ملک به انگلیسی (لاتین):</label>
+                  <label className="text-xs text-slate-300">Property Title (English):</label>
                   <input
                     type="text"
                     value={currentProperty.title}
@@ -987,7 +1023,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-300">قیمت نمایشی:</label>
+                    <label className="text-xs text-slate-300">Display Price:</label>
                     <input
                       type="text"
                       value={currentProperty.price}
@@ -997,7 +1033,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-300">موقعیت و آدرس:</label>
+                    <label className="text-xs text-slate-300">Location & Address:</label>
                     <input
                       type="text"
                       value={currentProperty.location}
@@ -1009,7 +1045,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-300">تعداد خواب:</label>
+                    <label className="text-xs text-slate-300">Bedrooms:</label>
                     <input
                       type="number"
                       value={currentProperty.beds}
@@ -1019,7 +1055,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-300">تعداد سرویس:</label>
+                    <label className="text-xs text-slate-300">Bathrooms:</label>
                     <input
                       type="number"
                       value={currentProperty.baths}
@@ -1029,7 +1065,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-300">متراژ (فوت/متر):</label>
+                    <label className="text-xs text-slate-300">Area (Sq Ft):</label>
                     <input
                       type="number"
                       value={currentProperty.sqft}
@@ -1040,7 +1076,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300">زیرعنوان و توضیحات معرفی:</label>
+                  <label className="text-xs text-slate-300">Descriptive Tagline / Subtitle:</label>
                   <input
                     type="text"
                     value={currentProperty.subtitleFa || currentProperty.subtitle}
@@ -1052,7 +1088,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Cover Image & Hero Preview Column */}
               <div className="space-y-4">
-                <label className="text-xs text-slate-300 block">تصویر شاخص و کاور نما (Hero Image):</label>
+                <label className="text-xs text-slate-300 block">Hero Cover Image URL:</label>
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 h-44">
                   <img
                     src={currentProperty.heroImage}
@@ -1069,13 +1105,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       className="px-3 py-1.5 rounded-xl bg-[#c5a880] text-black font-bold text-xs flex items-center gap-1.5 shadow"
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
-                      <span>تغییر تصویر از کتابخانه رسانه</span>
+                      <span>Change from Media Library</span>
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] text-slate-400">آدرس مستقیم تصویر (URL):</label>
+                  <label className="text-[11px] text-slate-400">Direct Image URL:</label>
                   <input
                     type="text"
                     value={currentProperty.heroImage}
@@ -1087,16 +1123,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             </div>
 
-            {/* SECTION: BROKER, AGENT & PERSONNEL SETTINGS (تنظیمات مشاور، عکس افراد و متن‌ها) */}
+            {/* SECTION: BROKER, AGENT & PERSONNEL SETTINGS (Broker, Personnel & Contacts) */}
             <div className="pt-6 border-t border-white/10 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-[#c5a880]" />
                   <h4 className="text-xs font-bold text-white">
-                    اطلاعات کارشناس، تصویر افراد و مشاور اختصاصی معرفی ملک
+                    Broker & Sales Personnel Profile
                   </h4>
                 </div>
-                <span className="text-[10px] text-slate-400">تنظیمات کارت پرسنلی و مشاور</span>
+                <span className="text-[10px] text-slate-400">Broker Card & Personnel Settings</span>
               </div>
 
               <div className="p-5 rounded-2xl bg-[#141624] border border-white/10 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
@@ -1106,7 +1142,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[#c5a880] shadow-xl bg-black">
                     <img
                       src={currentProperty.broker?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-                      alt={currentProperty.broker?.name || 'مشاور'}
+                      alt={currentProperty.broker?.name || 'Broker'}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -1120,31 +1156,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition-colors border border-white/10"
                   >
                     <ImageIcon className="w-3.5 h-3.5 text-[#c5a880]" />
-                    <span>تغییر تصویر چهره مشاور</span>
+                    <span>Change Agent Photo</span>
                   </button>
-                  <span className="text-[10px] text-slate-400">عکس پرتره باکیفیت مشاور</span>
+                  <span className="text-[10px] text-slate-400">High-resolution agent portrait photo</span>
                 </div>
 
                 {/* Agent Text Fields */}
                 <div className="md:col-span-8 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300">نام و نام خانوادگی کارشناس:</label>
+                      <label className="text-[11px] text-slate-300">Broker Full Name:</label>
                       <input
                         type="text"
                         value={currentProperty.broker?.name || ''}
-                        placeholder="مهندس جواد کاظمی"
+                        placeholder="Javad Kazemi"
                         onChange={(e) => handleUpdateBrokerField('name', e.target.value)}
                         className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300">سمت سازمانی و عنوان:</label>
+                      <label className="text-[11px] text-slate-300">Official Title:</label>
                       <input
                         type="text"
                         value={currentProperty.broker?.title || ''}
-                        placeholder="مدیر ارشد کارگزاری املاک لوکس"
+                        placeholder="Senior Vice President of Luxury Estates"
                         onChange={(e) => handleUpdateBrokerField('title', e.target.value)}
                         className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                       />
@@ -1153,7 +1189,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300">آژانس / هلدینگ:</label>
+                      <label className="text-[11px] text-slate-300">Agency / Brokerage Firm:</label>
                       <input
                         type="text"
                         value={currentProperty.broker?.agency || ''}
@@ -1164,7 +1200,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300">شماره تماس مستقیم:</label>
+                      <label className="text-[11px] text-slate-300">Direct Phone Number:</label>
                       <input
                         type="text"
                         value={currentProperty.broker?.phone || ''}
@@ -1175,7 +1211,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300">ایمیل مشاور:</label>
+                      <label className="text-[11px] text-slate-300">Broker Email:</label>
                       <input
                         type="email"
                         value={currentProperty.broker?.email || ''}
@@ -1187,7 +1223,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="space-y-1 pt-1">
-                    <label className="text-[11px] text-slate-400">آدرس مستقیم تصویر آواتار:</label>
+                    <label className="text-[11px] text-slate-400">Avatar Direct Photo URL:</label>
                     <input
                       type="text"
                       value={currentProperty.broker?.avatar || ''}
@@ -1209,7 +1245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-[#c5a880]" />
-                    <h3 className="text-sm font-bold text-white">افزودن و ثبت پروفایل ملک جدید</h3>
+                    <h3 className="text-sm font-bold text-white">Create New Property Profile</h3>
                   </div>
                   <button
                     onClick={() => setShowAddProfileModal(false)}
@@ -1222,19 +1258,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <form onSubmit={handleCreateProperty} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">عنوان فارسی ملک:</label>
+                      <label className="text-xs text-slate-300">Display Subtitle / Persian Title:</label>
                       <input
                         type="text"
                         required
                         value={newPropTitleFa}
-                        placeholder="عمارت کینتیک الهیه"
+                        placeholder="The Bel-Air Promontory Estate"
                         onChange={(e) => setNewPropTitleFa(e.target.value)}
                         className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">عنوان انگلیسی ملک:</label>
+                      <label className="text-xs text-slate-300">Property Title (English):</label>
                       <input
                         type="text"
                         required
@@ -1248,7 +1284,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">قیمت پیشنهادی:</label>
+                      <label className="text-xs text-slate-300">Listing Price:</label>
                       <input
                         type="text"
                         value={newPropPrice}
@@ -1259,11 +1295,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">موقعیت و منطقه:</label>
+                      <label className="text-xs text-slate-300">Location & City:</label>
                       <input
                         type="text"
                         value={newPropLocation}
-                        placeholder="تهران، زعفرانیه"
+                        placeholder="Monaco, Monte-Carlo"
                         onChange={(e) => setNewPropLocation(e.target.value)}
                         className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                       />
@@ -1272,7 +1308,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">تعداد اتاق:</label>
+                      <label className="text-xs text-slate-300">Bedrooms:</label>
                       <input
                         type="number"
                         value={newPropBeds}
@@ -1281,7 +1317,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">سرویس بهداشتی:</label>
+                      <label className="text-xs text-slate-300">Bathrooms:</label>
                       <input
                         type="number"
                         value={newPropBaths}
@@ -1290,7 +1326,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300">متراژ (فوت مربع):</label>
+                      <label className="text-xs text-slate-300">Area (Sq Ft):</label>
                       <input
                         type="number"
                         value={newPropSqft}
@@ -1301,7 +1337,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-300">آدرس تصویر کاور نما:</label>
+                    <label className="text-xs text-slate-300">Hero Facade Cover Image URL:</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -1317,7 +1353,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         }}
                         className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs shrink-0"
                       >
-                        کتابخانه
+                        Media Library
                       </button>
                     </div>
                   </div>
@@ -1328,13 +1364,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       onClick={() => setShowAddProfileModal(false)}
                       className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-medium"
                     >
-                      انصراف
+                      Cancel
                     </button>
                     <button
                       type="submit"
                       className="px-5 py-2 rounded-xl bg-[#c5a880] text-black font-bold text-xs shadow-lg hover:scale-105 transition-transform"
                     >
-                      ثبت و فعال‌سازی ملک در سامانه
+                      Create & Activate Listing
                     </button>
                   </div>
                 </form>
@@ -1346,7 +1382,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* TAB 1: FACADE & ARCHITECTURAL STYLING SETTINGS (تنظیمات نما) */}
+      {/* TAB 1: FACADE & ARCHITECTURAL STYLING SETTINGS (Exterior Facade Settings) */}
       {/* ======================================================== */}
       {adminTab === 'facade' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
@@ -1357,7 +1393,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-[#c5a880]" />
-                  <h3 className="text-sm font-bold text-white">تصویر و ویدیوی نمای عمارت</h3>
+                  <h3 className="text-sm font-bold text-white">Exterior Facade Cover & Media</h3>
                 </div>
                 <span className="text-[10px] text-[#c5a880] font-mono">Exterior Facade</span>
               </div>
@@ -1372,7 +1408,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                 <div className="absolute bottom-3 left-3 right-3 text-right">
                   <span className="text-[9px] font-mono text-[#c5a880] uppercase tracking-wider block">
-                    نمای اصلی بنا • ۴K
+                    Primary Facade Cover • 4K
                   </span>
                   <p className="text-xs font-bold text-white truncate">{currentProperty.titleFa || currentProperty.title}</p>
                 </div>
@@ -1380,7 +1416,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Image URL Input & Library Button */}
               <div className="space-y-2">
-                <label className="text-xs text-slate-300 block">لینک مستقیم تصویر نمای بیرونی (Hero Image):</label>
+                <label className="text-xs text-slate-300 block">Direct Hero Image URL:</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -1397,26 +1433,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="px-3 py-2 rounded-xl bg-[#c5a880]/20 hover:bg-[#c5a880]/30 text-[#c5a880] border border-[#c5a880]/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
                   >
                     <ImageIcon className="w-3.5 h-3.5" />
-                    <span>کتابخانه</span>
+                    <span>Media Library</span>
                   </button>
                 </div>
               </div>
 
               {/* Quick Preset Facade Images */}
               <div className="space-y-1.5 pt-2 border-t border-white/10">
-                <span className="text-[10px] text-slate-400 block">نمونه نماهای لوکس آماده:</span>
+                <span className="text-[10px] text-slate-400 block">Luxury Facade Presets:</span>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     {
-                      label: 'نمای شیشه‌ای مدرن',
+                      label: 'Curvilinear Glass Penthouse',
                       url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
                     },
                     {
-                      label: 'ویلا ساحلی مدیترانه',
+                      label: 'Mediterranean Oceanfront Villa',
                       url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
                     },
                     {
-                      label: 'عمارت کاخ کلاسیک',
+                      label: 'Neo-Classical Palace Estate',
                       url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
                     },
                   ].map((preset, idx) => (
@@ -1437,22 +1473,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="vbt-glass p-5 rounded-2xl border border-white/10 space-y-3 shadow-xl">
               <div className="flex items-center gap-2 pb-2 border-b border-white/10">
                 <Sparkles className="w-4 h-4 text-[#c5a880]" />
-                <h4 className="text-xs font-bold text-white">متریال‌های به کار رفته در نما</h4>
+                <h4 className="text-xs font-bold text-white">Exterior Materials & Cladding</h4>
               </div>
 
               <div className="space-y-2 text-xs">
                 <div className="p-2.5 rounded-xl bg-[#141624] border border-white/10 flex items-center justify-between">
                   <div>
-                    <span className="text-white font-medium block">سنگ تراورتن ناونا رومی</span>
-                    <span className="text-[10px] text-slate-400">مبدا: تیوولی، ایتالیا • پرداخت مات هوند</span>
+                    <span className="text-white font-medium block">Navona Roman Travertine Stone</span>
+                    <span className="text-[10px] text-slate-400">Origin: Tivoli, Italy • Honed Cross-Cut</span>
                   </div>
                   <span className="text-[10px] text-[#c5a880] font-mono font-bold">A++ Luxury</span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-[#141624] border border-white/10 flex items-center justify-between">
                   <div>
-                    <span className="text-white font-medium block">شیشه سه‌جداره خمیده لوئی</span>
-                    <span className="text-[10px] text-slate-400">سنت گوبن فرانسه با فیلتر آکوستیک و UV</span>
+                    <span className="text-white font-medium block">Saint-Gobain Curved Triple-Glazed Low-E</span>
+                    <span className="text-[10px] text-slate-400">Saint-Gobain France with Acoustic & UV Shielding</span>
                   </div>
                   <span className="text-[10px] text-emerald-400 font-mono font-bold">Eco Thermal</span>
                 </div>
@@ -1466,14 +1502,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-[#c5a880]" />
-                  <h3 className="text-sm font-bold text-white">مشخصات هویتی و معماری نما</h3>
+                  <h3 className="text-sm font-bold text-white">Property Architectural & Identity Specs</h3>
                 </div>
-                <span className="text-[10px] text-slate-400">ذخیره خودکار در تور</span>
+                <span className="text-[10px] text-slate-400">Auto-saved to Storage</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">عنوان پروژه (انگلیسی):</label>
+                  <label className="text-xs text-slate-300">Property Title (English):</label>
                   <input
                     type="text"
                     value={currentProperty.title}
@@ -1483,18 +1519,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">عنوان فارسی نما و عمارت:</label>
+                  <label className="text-xs text-slate-300">Display Subtitle / Tagline:</label>
                   <input
                     type="text"
                     value={currentProperty.titleFa || ''}
-                    placeholder="اسکای ویلا پورت هرکول"
+                    placeholder="The Sky Villa at Port Hercule"
                     onChange={(e) => handleUpdatePropertyField('titleFa', e.target.value)}
                     className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">قیمت نمایشی:</label>
+                  <label className="text-xs text-slate-300">Display Price:</label>
                   <input
                     type="text"
                     value={currentProperty.price}
@@ -1504,7 +1540,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">موقعیت مکانی (Location):</label>
+                  <label className="text-xs text-slate-300">Location & Address:</label>
                   <input
                     type="text"
                     value={currentProperty.location}
@@ -1514,7 +1550,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">متراژ زیربنا (Sq Ft):</label>
+                  <label className="text-xs text-slate-300">Interior Area (Sq Ft):</label>
                   <input
                     type="number"
                     value={currentProperty.sqft}
@@ -1524,7 +1560,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">معمار طراح (Architect):</label>
+                  <label className="text-xs text-slate-300">Architect / Design Studio:</label>
                   <input
                     type="text"
                     value={currentProperty.architect}
@@ -1534,7 +1570,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">تعداد سوئیت خواب (Beds):</label>
+                  <label className="text-xs text-slate-300">Bedrooms (Suites):</label>
                   <input
                     type="number"
                     value={currentProperty.beds}
@@ -1544,7 +1580,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">تعداد حمام و سرویس (Baths):</label>
+                  <label className="text-xs text-slate-300">Bathrooms:</label>
                   <input
                     type="number"
                     value={currentProperty.baths}
@@ -1555,7 +1591,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="space-y-1.5 pt-2 border-t border-white/10">
-                <label className="text-xs text-slate-300">تگ‌لاین و معرفی سبک معماری:</label>
+                <label className="text-xs text-slate-300">Tagline & Architectural Style:</label>
                 <input
                   type="text"
                   value={currentProperty.tagline}
@@ -1565,7 +1601,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-slate-300">زیرعنوان توصیفی نما:</label>
+                <label className="text-xs text-slate-300">Descriptive Subtitle:</label>
                 <textarea
                   rows={2}
                   value={currentProperty.subtitleFa || currentProperty.subtitle}
@@ -1575,14 +1611,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">تمام تغییرات مستقیماً در تور ویدیویی رندر می‌شود.</span>
+                <span className="text-[11px] text-slate-400">All updates render directly in the interactive tour.</span>
                 <button
                   type="button"
                   onClick={onNavigateToWalkthrough}
                   className="px-4 py-2 rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow"
                 >
                   <Compass className="w-3.5 h-3.5" />
-                  <span>مشاهده نتیجه روی نما</span>
+                  <span>Preview in Walkthrough</span>
                 </button>
               </div>
             </div>
@@ -1591,7 +1627,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* TAB 2: VIDEOS & CHAMBERS MANAGEMENT (تنظیمات ویدیوها و فضاها) */}
+      {/* TAB 2: VIDEOS & CHAMBERS MANAGEMENT (Chambers & Videos) */}
       {/* ======================================================== */}
       {adminTab === 'videos' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
@@ -1602,10 +1638,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <Film className="w-4 h-4 text-[#c5a880]" />
-                  <h3 className="text-xs font-bold text-white">فهرست فضاها و ویدیوها</h3>
+                  <h3 className="text-xs font-bold text-white">Chambers & Walkthrough Sequence</h3>
                 </div>
                 <span className="text-[10px] font-mono text-[#c5a880] font-bold">
-                  {currentProperty.rooms.length} فضا
+                  {currentProperty.rooms.length} Chambers
                 </span>
               </div>
 
@@ -1633,7 +1669,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           {room.nameFa || room.name}
                         </h4>
                         <span className="text-[10px] text-slate-400 block truncate">
-                          {room.enablePauseGate ? 'دارای توقف خودکار اسکرول' : 'پیمایش پیوسته'}
+                          {room.enablePauseGate ? 'Auto Checkpoint Active' : 'Continuous Scrub'}
                         </span>
                       </div>
                     </div>
@@ -1654,7 +1690,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
                 <div>
                   <span className="text-[10px] font-mono text-[#c5a880] uppercase tracking-wider block">
-                    تنظیمات فضا و ویدیوی اختصاصی
+                    Chamber & Video Scrubbing Configuration
                   </span>
                   <h3 className="font-display text-base sm:text-lg font-bold text-white mt-0.5">
                     {selectedRoom.nameFa || selectedRoom.name}
@@ -1662,7 +1698,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400">نوع مدیا:</span>
+                  <span className="text-[11px] text-slate-400">Media Pipeline:</span>
                   <span className="px-2 py-0.5 rounded bg-white/10 text-white font-mono text-[10px]">
                     {selectedRoom.mediaType.toUpperCase()}
                   </span>
@@ -1683,7 +1719,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* Video URL Config */}
               <div className="space-y-2">
                 <label className="text-xs text-slate-300 block">
-                  آدرس ویدیوی این فضا (MP4 / WebM / Sequence):
+                  Video Walkthrough Stream URL (MP4 / WebM / Sequence):
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1701,18 +1737,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="px-3.5 py-2 rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black text-xs font-bold flex items-center gap-1.5 transition-colors shadow"
                   >
                     <Video className="w-3.5 h-3.5" />
-                    <span>انتخاب ویدیو</span>
+                    <span>Select Video</span>
                   </button>
                 </div>
               </div>
 
-              {/* Checkpoint Decision Gate Config (ایستگاه توقف خودکار اسکرول و منوی ورود) */}
+              {/* Checkpoint Decision Gate Config (Auto Checkpoint Pause Gate) */}
               <div className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/40 space-y-3 shadow-lg">
                 <div className="flex items-center justify-between pb-2 border-b border-white/10">
                   <div className="flex items-center gap-2">
                     <DoorOpen className="w-4 h-4 text-[#c5a880]" />
                     <span className="text-xs font-bold text-white">
-                      توقف خودکار اسکرول و نمایش منوی ورود به اتاق‌ها (Pause Gate)
+                      Auto Checkpoint Pause Gate & Chamber Portal
                     </span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -1727,13 +1763,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  هنگامی که کاربر در حال اسکرول کردن روی این ویدیو است، حرکت در درصد تعیین شده کاملاً متوقف و قفل می‌شود و منوی انتخاب فضاها باز می‌شود تا مقصد بعدی تعیین گردد.
+When user scrolls, motion pauses at designated checkpoint and prompts room navigation.    Chambers  ‌     .
                 </p>
 
                 {selectedRoom.enablePauseGate && (
                   <div className="space-y-3 pt-2 border-t border-white/10 animate-in fade-in">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300">درصد وقوع توقف روی ویدیو:</span>
+                      <span className="text-slate-300">Checkpoint trigger progress:</span>
                       <span className="font-mono text-[#c5a880] font-bold">
                         {Math.round((selectedRoom.pauseCheckpointProgress ?? 0.85) * 100)}%
                       </span>
@@ -1749,11 +1785,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
 
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-400">متن عنوان پیام در لحظه توقف:</label>
+                      <label className="text-xs text-slate-400">Checkpoint prompt title:</label>
                       <input
                         type="text"
                         value={selectedRoom.pauseGateTitleFa || ''}
-                        placeholder="به تقاطع فضاهای عمارت رسیدید؛ انتخاب مقصد بعدی برای ورود:"
+                        placeholder="Reached entrance portal: Choose next chamber to explore:"
                         onChange={(e) => handleUpdateRoomField(selectedRoom.id, 'pauseGateTitleFa', e.target.value)}
                         className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                       />
@@ -1765,18 +1801,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* Room details fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300">عنوان فضا (فارسی):</label>
+                  <label className="text-xs text-slate-300">Chamber Title:</label>
                   <input
                     type="text"
                     value={selectedRoom.nameFa || ''}
-                    placeholder="سالن پذیرایی گرند صالون"
+                    placeholder="Grand Living Salon"
                     onChange={(e) => handleUpdateRoomField(selectedRoom.id, 'nameFa', e.target.value)}
                     className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300">زیرعنوان یا توضیحات کوتاه:</label>
+                  <label className="text-xs text-slate-300">Short Subtitle / Description:</label>
                   <input
                     type="text"
                     value={selectedRoom.subtitleFa || selectedRoom.subtitle}
@@ -1792,7 +1828,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* TAB 3: MOTION, KINETIC & SCROLL ENGINE (تنظیمات حرکتی و سرعت) */}
+      {/* TAB 3: MOTION, KINETIC & SCROLL ENGINE (Kinetic Motion & Velocity) */}
       {/* ======================================================== */}
       {adminTab === 'motion' && (
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -1802,8 +1838,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center gap-2.5">
                 <Gauge className="w-5 h-5 text-[#c5a880]" />
                 <div>
-                  <h3 className="text-base font-bold text-white">تنظیمات سرعت اسکرول و موتور حرکتی سینمایی</h3>
-                  <p className="text-xs text-slate-400">کنترل حساسیت چرخ ماوس، پیمایش لمسی و اینرسی GSAP</p>
+                  <h3 className="text-base font-bold text-white">Cinematic Scroll Velocity & Inertia Physics</h3>
+                  <p className="text-xs text-slate-400">Control trackpad sensitivity, touch dragging, and GSAP inertia scrubbing.</p>
                 </div>
               </div>
               <span className="font-mono text-sm text-[#c5a880] font-bold">
@@ -1814,22 +1850,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Scroll Speed Factor with Presets */}
             <div className="space-y-3">
               <label className="text-xs font-semibold text-white block">
-                حالت‌های پیش‌فرض سرعت اسکرول:
+                Speed Multiplier Presets:
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {[
-                  { label: '۰.۲۵x اسلوموشن بسیار آرام', val: 0.25, desc: 'Ultra Slow' },
-                  { label: '۰.۴۵x سینمایی لوکس', val: 0.45, desc: 'Cinematic Default' },
-                  { label: '۰.۸۰x متعادل و طبیعی', val: 0.8, desc: 'Balanced' },
-                  { label: '۱.۲۰x سریع و واکنشی', val: 1.2, desc: 'Fast Responsive' },
+                  { label: '0.25x Ultra Slow', val: 0.25, desc: 'Ultra Slow' },
+                  { label: '0.45x Cinematic', val: 0.45, desc: 'Cinematic Default' },
+                  { label: '0.80x Balanced', val: 0.8, desc: 'Balanced' },
+                  { label: '1.20x Dynamic', val: 1.2, desc: 'Fast Responsive' },
                 ].map((item) => (
                   <button
                     key={item.val}
                     type="button"
                     onClick={() => {
                       onUpdateConfig({ ...config, scrollSpeedFactor: item.val });
-                      showToast(`سرعت اسکرول به ${item.val}x تنظیم شد.`);
+                      showToast(`Scroll speed set to ${item.val}x applied.`);
                     }}
                     className={`p-3 rounded-2xl border text-right transition-all ${
                       Math.abs((config.scrollSpeedFactor || 0.45) - item.val) < 0.05
@@ -1846,7 +1882,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* Range Slider for Fine Tuning */}
               <div className="space-y-1.5 pt-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">تنظیم دقیق ضریب سرعت:</span>
+                  <span className="text-slate-400">Fine Tune Speed Factor:</span>
                   <span className="font-mono text-[#c5a880] font-bold">
                     {(config.scrollSpeedFactor || 0.45).toFixed(2)}x
                   </span>
@@ -1867,10 +1903,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-[#141624] border border-white/10 flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-white block">
-                  فعال‌سازی سراسری ایستگاه‌های توقف خودکار برای تمام فضاها
+                  Enable Global Checkpoint Pause Gates Across All Chambers
                 </span>
                 <span className="text-[11px] text-slate-400 block mt-0.5">
-                  هنگام رسیدن به آستانه هر اتاق، اسکرول متوقف و قفل شده و پنجره انتخاب مقصد ظاهر می‌شود.
+                  When reaching designated checkpoint progress, scroll is paused until destination is chosen.
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -1887,7 +1923,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* GSAP Scrub Smoothing */}
             <div className="space-y-2 pt-2 border-t border-white/10">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">ضریب اینرسی و نرمی حرکت GSAP (Scrub Smoothing):</span>
+                <span className="text-slate-300">GSAP Scrub Smoothing Inertia:</span>
                 <span className="font-mono text-[#c5a880] font-bold">{config.scrubSmoothing}s</span>
               </div>
               <input
@@ -1904,8 +1940,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Sound Effects */}
             <div className="p-4 rounded-2xl bg-[#141624] border border-white/10 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-white block">افکت‌های صوتی هاپتیک و صدای محیط</span>
-                <span className="text-[11px] text-slate-400 block mt-0.5">پخش چایم‌های لوکس در هنگام عبور از ایستگاه‌ها یا کلیک بر روی گزینه‌ها</span>
+                <span className="text-xs font-bold text-white block">Haptic Sound Effects & Spatial Soundscapes</span>
+<span className="text-[11px] text-slate-400 block mt-0.5">Play subtle luxury haptic audio cues when crossing checkpoints‌     ‌</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -1923,7 +1959,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* TAB 4: ADVANCED TOOLS & ELEMENTOR BUILDER (ابزارهای پیشرفته و المنتور) */}
+      {/* TAB 4: ADVANCED TOOLS & ELEMENTOR BUILDER (Advanced Tools & Elementor) */}
       {/* ======================================================== */}
       {adminTab === 'tools' && (
         <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -1932,11 +1968,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center gap-2">
               <Sliders className="w-5 h-5 text-[#c5a880]" />
               <h3 className="text-base font-bold text-white">
-                ابزارهای پیشرفته مدیریت، استودیو المنتور و خروجی وردپرس
+                Advanced Tools, Live Elementor Studio & WordPress Plugins
               </h3>
             </div>
             <p className="text-xs text-slate-300">
-              دسترسی به بخش‌های تخصصی پلتفرم شامل استودیو المنتور، موتور تست ویدیوهای 4K، بسته‌های افزونه وردپرس و مدل‌های بازگشت سرمایه مخصوص مدیر کل.
+Direct access to visual builder, video test bench, plugin generator, and broker conversion models. ‌     .
             </p>
           </div>
 
@@ -1949,9 +1985,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Sliders className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">استودیو شخصی‌سازی زنده المنتور (Elementor Studio)</h4>
+                  <h4 className="text-sm font-bold text-white">Live Elementor Visual Studio</h4>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                    تنظیمات بی‌درنگ فونت، پالت رنگی طلایی و نئوکلاسیک، ابعاد دکمه‌ها و استایل‌های پنل مشخصات پروژه مستقیماً در ویرایشگر المنتور.
+Live real-time customizer for fonts, champagne gold accents, button radiuses, and HUD styling.   .
                   </p>
                 </div>
               </div>
@@ -1960,7 +1996,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={() => onSelectTab && onSelectTab('elementor_builder')}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#b3956d] text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-transform"
               >
-                <span>ورود به استودیو المنتور</span>
+                <span>Open Elementor Studio</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -1972,9 +2008,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Film className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">تست و بهینه‌ساز ویدیوهای 4K و فضاها</h4>
+                  <h4 className="text-sm font-bold text-white">4K Video Stream Resilience & Optimizer</h4>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                    بررسی هماهنگی کدک‌های H.264 / AV1، تست راندمان بافرینگ و تضمین نرخ فریم ۶۰ فریم بر ثانیه برای نمایش روان تور در مرورگرهای موبایل و دسکتاپ.
+Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FPS playback.      .
                   </p>
                 </div>
               </div>
@@ -1983,7 +2019,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={() => onSelectTab && onSelectTab('video_optimizer')}
                 className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all"
               >
-                <span>ورود به بهینه‌ساز ویدیو</span>
+                <span>Open Video Optimizer</span>
                 <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
               </button>
             </div>
@@ -1995,9 +2031,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <FolderArchive className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">پکیج و سورس افزونه وردپرس (WordPress Plugin & ZIP)</h4>
+                  <h4 className="text-sm font-bold text-white">WordPress Plugin Package & ZIP Export</h4>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                    مشاهده سورس کدهای کامل PHP، ساختار ماژولار شورت‌کدها و دانلود فایل زیپ کامل افزونه جهت نصب مستقیم در پنل مدیریت وردپرس.
+                    Generate complete production-grade WordPress plugin package with shortcodes and Elementor widget.
                   </p>
                 </div>
               </div>
@@ -2006,7 +2042,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={() => onSelectTab && onSelectTab('plugin_code')}
                 className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all"
               >
-                <span>مشاهده کد و دانلود ZIP افزونه</span>
+                <span>Export WordPress Plugin (.zip)</span>
                 <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
               </button>
             </div>
@@ -2018,9 +2054,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <TrendingUp className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">مدل اقتصادی و بازگشت سرمایه کارگزاری (Broker ROI)</h4>
+                  <h4 className="text-sm font-bold text-white">Broker ROI & Conversion Blueprint</h4>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                    تحلیل دقیق نرخ بازگشت سرمایه، محاسبه افزایش ۳۰۰٪ ماندگاری بازدیدکنندگان و نرخ تبدیل سرنخ‌های مشتریان میلیاردی املاک لوکس.
+                    In-depth ROI analytics demonstrating 300% longer visitor retention and ultra-high conversion rates.
                   </p>
                 </div>
               </div>
@@ -2029,7 +2065,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={() => onSelectTab && onSelectTab('broker_roi')}
                 className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all"
               >
-                <span>مشاهده تحلیل بازگشت سرمایه</span>
+                <span>View Broker ROI Blueprint</span>
                 <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
               </button>
             </div>
@@ -2040,7 +2076,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* TAB 5: SECURITY, USERNAME & PASSWORD MANAGEMENT (تغییر رمز و یوزر) */}
+      {/* TAB 5: SECURITY, USERNAME & PASSWORD MANAGEMENT (Security & Credentials) */}
       {/* ======================================================== */}
       {adminTab === 'security' && (
         <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -2051,12 +2087,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center gap-2.5">
                 <Key className="w-5 h-5 text-[#c5a880]" />
                 <div>
-                  <h3 className="text-base font-bold text-white">تغییر نام کاربری و رمز عبور مدیر سامانه</h3>
-                  <p className="text-xs text-slate-400">به‌روزرسانی مشخصات ورود و مدیریت کلیدهای دسترسی</p>
+                  <h3 className="text-base font-bold text-white">Update Administrator Credentials</h3>
+                  <p className="text-xs text-slate-400">Modify login credentials and access authentication keys.</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30">
-                حفاظت امنیتی فعال
+                Security Protection Active
               </span>
             </div>
 
@@ -2084,7 +2120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs text-slate-300 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-[#c5a880]" />
-                  <span>نام کاربری جدید (Username):</span>
+                  <span>New Username (Username):</span>
                 </label>
                 <input
                   type="text"
@@ -2100,40 +2136,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs text-slate-300 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
-                  <span>رمز عبور فعلی جهت تایید هویت:</span>
+                  <span>Current Password for Verification:</span>
                 </label>
                 <input
                   type="password"
                   value={currentPasswordForUpdate}
                   onChange={(e) => setCurrentPasswordForUpdate(e.target.value)}
-                  placeholder="رمز فعلی (پیش‌فرض: admin)"
+                  placeholder="Current password (default: admin)"
                   className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono"
                 />
                 <span className="text-[10px] text-slate-400 block">
-                  اگر رمز را قبلاً تغییر نداده‌اید، رمز فعلی <strong className="text-[#c5a880]">admin</strong> می‌باشد.
+                  If you haven't changed credentials yet, the default password is <strong className="text-[#c5a880]">admin</strong> ..
                 </span>
               </div>
 
               {/* New Password & Confirm */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">رمز عبور جدید (اختیاری):</label>
+                  <label className="text-xs text-slate-300">New Password (optional):</label>
                   <input
                     type="password"
                     value={newPasswordInput}
                     onChange={(e) => setNewPasswordInput(e.target.value)}
-                    placeholder="کلمه عبور جدید..."
+                    placeholder="New password..."
                     className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300">تکرار رمز عبور جدید:</label>
+                  <label className="text-xs text-slate-300">Confirm New Password:</label>
                   <input
                     type="password"
                     value={confirmPasswordInput}
                     onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                    placeholder="تکرار کلمه عبور..."
+                    placeholder="Confirm new password..."
                     className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono"
                   />
                 </div>
@@ -2145,7 +2181,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] hover:from-[#e6d5bd] hover:to-[#c5a880] text-black font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-[#c5a880]/20"
                 >
                   <Save className="w-4 h-4" />
-                  <span>ذخیره تغییرات نام کاربری و رمز عبور</span>
+                  <span>Save New Credentials</span>
                 </button>
 
                 <button
@@ -2154,7 +2190,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-colors border border-white/10"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>بازنشانی به پیش‌فرض (admin / admin)</span>
+                  <span>Reset to Factory Defaults (admin / admin)</span>
                 </button>
               </div>
             </form>
@@ -2165,7 +2201,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#c5a880]" />
-                <h4 className="text-xs font-bold text-white">اتصال و همگام‌سازی با حساب گوگل و جیمیل</h4>
+                <h4 className="text-xs font-bold text-white">Google & Gmail Authentication Sync</h4>
               </div>
               <span className="text-[10px] text-emerald-400 font-mono font-bold">Google SSO Ready</span>
             </div>
@@ -2193,7 +2229,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </svg>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-white block">حساب جیمیل مدیر کل:</span>
+                  <span className="text-xs font-bold text-white block">Super Admin Google Account:</span>
                   <span className="text-xs font-mono text-[#c5a880]">kazeme.javad@gmail.com</span>
                 </div>
               </div>
@@ -2202,11 +2238,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 type="button"
                 onClick={() => {
                   handleGoogleLogin('kazeme.javad@gmail.com');
-                  showToast('حساب جیمیل بازتایید و همگام شد.');
+                  showToast('Google account verified and synced.');
                 }}
                 className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors border border-white/20"
               >
-                تایید مجدد جیمیل
+                Re-verify Google Account
               </button>
             </div>
           </div>
@@ -2223,7 +2259,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }}
         onSelect={handleSelectMedia}
         onSelectMedia={handleSelectMedia}
-        title="کتابخانه چندرسانه‌ای VibeTour"
+        title="VibeTour Pro Media Library"
       />
     </div>
   );

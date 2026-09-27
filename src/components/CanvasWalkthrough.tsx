@@ -84,10 +84,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   const [showHubModal, setShowHubModal] = useState<boolean>(false);
   const [showMaterialsDrawer, setShowMaterialsDrawer] = useState<boolean>(false);
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem | null>(null);
-  const [lang, setLang] = useState<'fa' | 'en'>(config.language || 'fa');
+  const [lang, setLang] = useState<'fa' | 'en'>('en');
   const [fps, setFps] = useState<number>(60);
   const [hoveredBeacon, setHoveredBeacon] = useState<string | null>(null);
-  const isFa = lang === 'fa';
+  const isFa = false;
 
   // Scroll Speed Adjustment
   const [scrollSpeed, setScrollSpeed] = useState<number>(config.scrollSpeedFactor || 0.5);
@@ -554,7 +554,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           ctx.fillStyle = sunGlow;
           ctx.fillRect(0, 0, width, height);
 
-          // 1. Render Interactive Material Beacons (نقاط انتخاب متریال با کلیک و مشاهده توضیحات)
+          // 1. Render Interactive Material Beacons (Click to view specs and origin)
           if (currRoom.materials && currRoom.materials.length > 0) {
             currRoom.materials.forEach((mat) => {
               const mx = ((mat.x ?? 50) / 100) * width;
@@ -813,7 +813,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       tabIndex={0}
-      dir={isFa ? 'rtl' : 'ltr'}
+      dir="ltr"
       className={`relative w-full overflow-hidden select-none bg-[#090a0f] text-slate-100 flex flex-col items-center justify-center outline-none touch-none ${
         isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[68vh] sm:h-[78vh] min-h-[520px] max-h-[860px] rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl shadow-black/90'
       }`}
@@ -852,12 +852,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
             </div>
           </div>
           <h3 className="font-display text-sm sm:text-base tracking-[0.2em] uppercase text-white mb-1">
-            {isFa ? 'موتور پردازشگر تور مجازی' : 'VibeTour Pro Engine'}
+            'VibeTour Pro Engine'
           </h3>
           <p className="text-[11px] sm:text-xs text-slate-400 font-light tracking-wide text-center mb-3 max-w-xs sm:max-w-md">
-            {isFa 
-              ? 'در حال آماده‌سازی ویدیوهای اختصاصی، فریم‌های ۶۰ فریم و متریال‌ها...' 
-              : 'Buffering cinematic room sequences & material shaders...'}
+            Buffering cinematic room sequences & material shaders...
           </p>
           <div className="w-48 sm:w-56 h-1.5 bg-white/10 rounded-full overflow-hidden relative">
             <div 
@@ -889,16 +887,6 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
         {/* Top Right Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
-          {/* Language Switcher */}
-          <button
-            onClick={() => setLang(lang === 'fa' ? 'en' : 'fa')}
-            title="Switch Language / تغییر زبان"
-            className="vbt-glass px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs text-slate-200 hover:text-[#c5a880] hover:border-[#c5a880]/40 transition-colors flex items-center gap-1 font-medium"
-          >
-            <Globe className="w-3.5 h-3.5 text-[#c5a880]" />
-            <span className="text-[11px]">{lang === 'fa' ? 'EN' : 'فا'}</span>
-          </button>
-
           {/* Materials & Finishes Button */}
           <button
             onClick={() => {
@@ -915,7 +903,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           >
             <Layers className="w-3.5 h-3.5 text-[#c5a880]" />
             <span className="hidden sm:inline">
-              {isFa ? 'متریال‌ها و مصالح' : 'Materials'}
+              'Materials'
             </span>
           </button>
 
@@ -953,7 +941,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setShowSpeedPanel(!showSpeedPanel)}
-                  title={isFa ? 'تنظیم سرعت اسکرول و پیمایش (مخصوص مدیر)' : 'Adjust Scroll Speed (Admin Only)'}
+                  title='Adjust Scroll Speed (Admin Only)'
                   className={`vbt-glass px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg ${
                     showSpeedPanel 
                       ? 'bg-[#c5a880] text-black font-semibold' 
@@ -973,7 +961,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                       <div className="flex items-center gap-1.5">
                         <Gauge className="w-4 h-4 text-[#c5a880]" />
                         <span className="text-xs font-bold text-white">
-                          {isFa ? 'تنظیم سرعت اسکرول (مدیر)' : 'Scroll Speed Control (Admin)'}
+                          'Scroll Speed Control (Admin)'
                         </span>
                       </div>
                       <button 
@@ -987,14 +975,14 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                     {/* Preset Speed Buttons */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] text-slate-300 block">
-                        {isFa ? 'حالت‌های پیش‌فرض:' : 'Speed Presets:'}
+                        'Speed Presets:'
                       </span>
                       <div className="grid grid-cols-2 gap-1.5">
                         {[
-                          { val: 0.25, labelFa: '۰.۲۵x اسلوموشن', labelEn: '0.25x Ultra Slow' },
-                          { val: 0.5, labelFa: '۰.۵x سینمایی (پیش‌فرض)', labelEn: '0.5x Cinematic' },
-                          { val: 1.0, labelFa: '۱.۰x طبیعی', labelEn: '1.0x Standard' },
-                          { val: 1.8, labelFa: '۱.۸x سریع', labelEn: '1.8x Fast' },
+                          { val: 0.25, labelEn: '0.25x Ultra Slow' },
+                          { val: 0.5, labelEn: '0.5x Cinematic' },
+                          { val: 1.0, labelEn: '1.0x Standard' },
+                          { val: 1.8, labelEn: '1.8x Fast' },
                         ].map((item) => (
                           <button
                             key={item.val}
@@ -1008,7 +996,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                                 : 'bg-white/5 hover:bg-white/15 text-slate-200'
                             }`}
                           >
-                            {isFa ? item.labelFa : item.labelEn}
+                            {item.labelEn}
                           </button>
                         ))}
                       </div>
@@ -1017,7 +1005,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                     {/* Fine Tuning Slider */}
                     <div className="space-y-1 pt-1">
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-slate-400">{isFa ? 'تنظیم دقیق:' : 'Fine Tuning:'}</span>
+                        <span className="text-slate-400">Fine Tuning:</span>
                         <span className="font-mono text-[#c5a880] font-bold">{scrollSpeed.toFixed(2)}x</span>
                       </div>
                       <input
@@ -1036,7 +1024,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                       <div className="flex items-center gap-1.5">
                         <DoorOpen className="w-3.5 h-3.5 text-[#c5a880]" />
                         <span className="text-[10px] text-slate-200">
-                          {isFa ? 'ایستگاه‌های توقف خودکار' : 'Auto Checkpoint Gates'}
+                          'Auto Checkpoint Gates'
                         </span>
                       </div>
                       <button
@@ -1050,7 +1038,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                             : 'bg-white/10 text-slate-400'
                         }`}
                       >
-                        {enableGates ? (isFa ? 'فعال' : 'ON') : (isFa ? 'غیرفعال' : 'OFF')}
+                        {enableGates ? 'ON' : 'OFF'}
                       </button>
                     </div>
                   </div>
@@ -1061,12 +1049,12 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               {onOpenCustomizer && (
                 <button
                   onClick={onOpenCustomizer}
-                  title="باز کردن استودیو المنتور (مخصوص مدیر)"
+                  title='Open Elementor Studio (Admin Only)'
                   className="vbt-glass-gold px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium text-[#e6d5bd] flex items-center gap-1 hover:scale-105 transition-transform shadow-lg"
                 >
                   <Sliders className="w-3.5 h-3.5 text-[#c5a880]" />
                   <span className="hidden md:inline">
-                    {isFa ? 'المنتور' : 'Elementor'}
+                    'Elementor'
                   </span>
                 </button>
               )}
@@ -1075,7 +1063,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         </div>
       </div>
 
-      {/* Floating "Return to Grand Salon Hub" (دکمه بازگشت به پذیرایی اصلی) */}
+      {/* Floating "Return to Grand Salon Hub" */}
       {isPastEntrance && !isAtHub && (
         <div className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-30 animate-in fade-in zoom-in-95 duration-200">
           <button
@@ -1084,13 +1072,13 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           >
             <RotateCcw className="w-3.5 h-3.5 text-[#c5a880]" />
             <span>
-              {isFa ? 'بازگشت به مرکز پذیرایی' : 'Return to Grand Salon Hub'}
+              'Return to Grand Salon Hub'
             </span>
           </button>
         </div>
       )}
 
-      {/* Decision Gate Modal: Strict Pause Gate & Room Entrance Menu (ایستگاه توقف خودکار اسکرول و منوی ورود به اتاق‌ها) */}
+      {/* Decision Gate Modal: Strict Pause Gate & Room Entrance Menu */}
       {activeGateRoom && (
         <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-xl flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-200">
           <div className="max-w-4xl w-full vbt-glass-gold p-5 sm:p-8 rounded-3xl border border-[#c5a880]/50 shadow-2xl relative space-y-4 sm:space-y-6 max-h-[92vh] overflow-y-auto">
@@ -1100,20 +1088,18 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#c5a880]/20 border border-[#c5a880]/40 text-[#c5a880] text-[11px] font-mono font-bold uppercase tracking-wider animate-pulse">
                 <Lock className="w-3.5 h-3.5 text-amber-300" />
                 <span>
-                  {isFa ? 'ایستگاه ناوبری هوشمند • اسکرول متوقف شد' : 'Decision Gate • Scroll Paused'}
+                  'Decision Gate • Scroll Paused'
                 </span>
               </div>
 
               <h2 className="font-display text-lg sm:text-2xl font-bold text-white tracking-wide">
                 {isFa && activeGateRoom.pauseGateTitleFa
                   ? activeGateRoom.pauseGateTitleFa
-                  : activeGateRoom.pauseGateTitle || (isFa ? 'پایان مسیر این فضا؛ ورود به کدام اتاق را انتخاب می‌کنید؟' : 'Reached Checkpoint: Choose Next Chamber to Explore')}
+                  : activeGateRoom.pauseGateTitle || 'Reached Checkpoint: Choose Next Chamber to Explore'}
               </h2>
 
               <p className="text-[11px] sm:text-xs text-slate-300 max-w-xl mx-auto font-light leading-relaxed">
-                {isFa
-                  ? 'حرکت اسکرول در این لحظه قفل شده است تا مسیر دلخواه بعدی خود را تعیین فرمایید. لطفاً یکی از فضاهای زیر را جهت ورود به ویدیوی آن انتخاب نمایید، یا برای ادامه گشت در همین فضا دکمه ادامه را بزنید.'
-                  : 'Scroll is paused at this checkpoint. Select any sanctuary below to enter its video walkthrough, or unlock scroll to continue in this space.'}
+                Scroll is paused at this checkpoint. Select any sanctuary below to enter its video walkthrough, or unlock scroll to continue in this space.
               </p>
             </div>
 
@@ -1158,10 +1144,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                     <div className="flex items-center justify-between text-[10px] pt-2 border-t border-white/10 text-slate-300">
                       <span className="flex items-center gap-1 text-[#c5a880]">
                         <Sparkles className="w-3 h-3" />
-                        <span>{room.materials?.length || 2} {isFa ? 'متریال لوکس' : 'Materials'}</span>
+                        <span>{room.materials?.length || 2} Materials</span>
                       </span>
                       <span className="flex items-center gap-1 font-semibold group-hover:text-[#c5a880] transition-colors">
-                        <span>{isFa ? 'ورود به این اتاق' : 'Enter Chamber'}</span>
+                        <span>Enter Chamber</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
@@ -1177,13 +1163,13 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               >
                 <Unlock className="w-4 h-4 text-[#c5a880]" />
                 <span>
-                  {isFa ? 'ادامه حرکت در همین فضا و باز کردن اسکرول' : 'Continue In Current Room & Unlock Scroll'}
+                  'Continue In Current Room & Unlock Scroll'
                 </span>
               </button>
 
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <span className="hidden sm:inline">
-                  {isFa ? 'برای تماشای مجدد عقب، می‌توانید به بالا اسکرول نمایید.' : 'You can scroll backward to look back.'}
+                  'You can scroll backward to look back.'
                 </span>
               </div>
             </div>
@@ -1191,7 +1177,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         </div>
       )}
 
-      {/* Grand Living Hub Menu Overlay (منوی جامع انتخاب اتاق‌ها در مرکز سالن پذیرایی) */}
+      {/* Grand Living Hub Menu Overlay */}
       {(showHubModal || (isAtHub && progressRef.current > 0.35 && progressRef.current < 0.46)) && (
         <div className="absolute inset-0 z-35 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-300">
           <div className="max-w-4xl w-full vbt-glass-gold p-5 sm:p-8 rounded-3xl border border-[#c5a880]/40 shadow-2xl relative space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto">
@@ -1204,15 +1190,13 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
             <div className="text-center space-y-1">
               <span className="text-[10px] sm:text-[11px] uppercase font-mono tracking-[0.2em] text-[#c5a880] font-bold">
-                {isFa ? 'مرکز ناوبری اختصاصی پنت‌هاوس' : 'Grand Living Salon Hub'}
+                'Grand Living Salon Hub'
               </span>
               <h2 className="font-display text-lg sm:text-2xl font-bold text-white">
-                {isFa ? 'انتخاب فضا و اتاق برای تماشای ویدیوی اختصاصی' : 'Select a Chamber to Explore Video Walkthrough'}
+                'Select a Chamber to Explore Video Walkthrough'
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-300 max-w-lg mx-auto font-light">
-                {isFa 
-                  ? 'با انتخاب هر بخش، ویدیوی باکیفیت و متریال‌های اختصاصی آن فضا بارگذاری می‌شود و با اسکرول کنترل خواهد شد.'
-                  : 'Select any sanctuary below to transition and scrub through its video walkthrough.'}
+                Select any sanctuary below to transition and scrub through its video walkthrough.
               </p>
             </div>
 
@@ -1246,10 +1230,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                   <div className="flex items-center justify-between text-[10px] pt-2 border-t border-white/10 text-slate-400">
                     <span className="flex items-center gap-1 text-[#c5a880]">
                       <Sparkles className="w-3 h-3" />
-                      <span>{room.materials?.length || 2} {isFa ? 'متریال لوکس' : 'Materials'}</span>
+                      <span>{room.materials?.length || 2} Materials</span>
                     </span>
                     <span className="flex items-center gap-1 text-slate-300 group-hover:text-white">
-                      <span>{isFa ? 'ورود به فضا' : 'Enter'}</span>
+                      <span>Enter Chamber</span>
                       <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
@@ -1260,7 +1244,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         </div>
       )}
 
-      {/* Materials & Finishes Explorer Drawer / Mobile Bottom Sheet (انتخاب و بررسی متریال‌های استفاده شده) */}
+      {/* Materials & Finishes Explorer Drawer */}
       {showMaterialsDrawer && activeRoom.materials && (
         <div className="absolute inset-y-0 right-0 sm:w-[420px] w-full max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[82vh] max-sm:rounded-t-3xl z-40 bg-[#0c0e15]/98 sm:backdrop-blur-2xl border-t sm:border-t-0 sm:border-l border-white/15 p-5 sm:p-6 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right max-sm:slide-in-from-bottom duration-300">
           <div className="space-y-4 overflow-y-auto pr-1">
@@ -1272,7 +1256,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-[#c5a880]" />
                 <h3 className="font-display text-sm font-bold text-white">
-                  {isFa ? 'متریال‌ها و مصالح معماری' : 'Architectural Materials'}
+                  'Architectural Materials'
                 </h3>
               </div>
               <button
@@ -1287,21 +1271,21 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
             <div className="bg-[#141622] p-3 rounded-xl border border-white/5 flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-slate-400 block">
-                  {isFa ? 'فضای در حال نمایش' : 'Current Chamber'}
+                  'Current Chamber'
                 </span>
                 <span className="text-xs font-bold text-white">
                   {isFa && activeRoom.nameFa ? activeRoom.nameFa : activeRoom.name}
                 </span>
               </div>
               <span className="text-[10px] font-mono text-[#c5a880] px-2 py-0.5 rounded bg-[#c5a880]/15">
-                {activeRoom.materials.length} {isFa ? 'متریال' : 'Items'}
+                {activeRoom.materials.length} Items
               </span>
             </div>
 
             {/* Material Swatch Selector */}
             <div className="space-y-2">
               <span className="text-[11px] font-semibold text-slate-300 block">
-                {isFa ? 'انتخاب متریال جهت مشاهده جزییات:' : 'Select Material Swatch:'}
+                'Select Material Swatch:'
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {activeRoom.materials.map((mat) => {
@@ -1362,22 +1346,22 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
                 <div className="space-y-1.5 pt-2 border-t border-white/10 text-[10px] sm:text-[11px]">
                   <div className="flex items-center justify-between text-slate-400">
-                    <span>{isFa ? 'خاستگاه و کشور مبدا:' : 'Origin:'}</span>
+                    <span>Origin:</span>
                     <span className="font-medium text-white">{selectedMaterial.origin}</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-400">
-                    <span>{isFa ? 'نوع فینیش و پرداخت:' : 'Finish:'}</span>
+                    <span>Finish:</span>
                     <span className="font-medium text-[#c5a880]">{selectedMaterial.finish}</span>
                   </div>
                   {selectedMaterial.spec && (
                     <div className="flex items-center justify-between text-slate-400">
-                      <span>{isFa ? 'استاندارد فنی:' : 'Spec:'}</span>
+                      <span>Specification:</span>
                       <span className="font-mono text-white">{selectedMaterial.spec}</span>
                     </div>
                   )}
                   {selectedMaterial.ecoCert && (
                     <div className="flex items-center justify-between text-slate-400">
-                      <span>{isFa ? 'گواهی زیست‌محیطی:' : 'Eco Cert:'}</span>
+                      <span>Eco Certification:</span>
                       <span className="text-emerald-400 flex items-center gap-1">
                         <ShieldCheck className="w-3 h-3" />
                         <span>{selectedMaterial.ecoCert}</span>
@@ -1394,7 +1378,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               onClick={() => setShowMaterialsDrawer(false)}
               className="w-full py-2.5 rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black font-semibold text-xs transition-all shadow-lg"
             >
-              {isFa ? 'بستن پنل و ادامه گشت‌وگذار' : 'Close & Continue Tour'}
+              'Close & Continue Tour'
             </button>
           </div>
         </div>
@@ -1406,7 +1390,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           <div className="flex items-start justify-between gap-3 mb-2">
             <div>
               <span className="text-[9px] sm:text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded bg-[#c5a880]/20 text-[#c5a880] border border-[#c5a880]/40 font-bold">
-                {selectedHotspot.category} {isFa ? 'نقطه کانونی' : 'Highlight'}
+                {selectedHotspot.category} Highlight
               </span>
               <h4 className="font-display text-xs sm:text-base font-bold text-white mt-1">
                 {isFa && selectedHotspot.titleFa ? selectedHotspot.titleFa : selectedHotspot.title}
@@ -1424,13 +1408,13 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           </p>
           {selectedHotspot.spec && (
             <div className="flex items-center justify-between text-[10px] sm:text-[11px] pt-1.5 border-t border-white/10 text-slate-400">
-              <span>{isFa ? 'مشخصات فنی:' : 'Specification:'}</span>
+              <span>Specification:</span>
               <span className="font-medium text-white">{selectedHotspot.spec}</span>
             </div>
           )}
           {selectedHotspot.priceTag && (
             <div className="flex items-center justify-between text-[10px] sm:text-[11px] pt-1 text-[#c5a880]">
-              <span>{isFa ? 'ارزش تخمینی:' : 'Valuation:'}</span>
+              <span>Valuation:</span>
               <span className="font-semibold">{selectedHotspot.priceTag}</span>
             </div>
           )}
@@ -1509,7 +1493,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                     <div
                       className="absolute top-0 bottom-0 w-1 bg-amber-400 pointer-events-none z-10 shadow-[0_0_6px_rgba(251,191,36,0.9)]"
                       style={{ left: `${gateGlobal * 100}%` }}
-                      title={`ایستگاه توقف خودکار: ${r.name}`}
+                      title={`Auto Checkpoint: ${r.name}`}
                     />
                   )}
                 </React.Fragment>
@@ -1525,7 +1509,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       {progressRef.current < 0.05 && (
         <div className="absolute bottom-20 sm:bottom-28 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center gap-1 animate-bounce">
           <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-display text-[#c5a880] bg-black/80 px-3.5 py-1 rounded-full border border-[#c5a880]/30 backdrop-blur-md font-semibold">
-            {isFa ? 'برای ورود به ساختمان، به آرامی اسکرول کنید' : 'Scroll slowly to enter through the main gates'}
+            'Scroll slowly to enter through the main gates'
           </span>
         </div>
       )}
