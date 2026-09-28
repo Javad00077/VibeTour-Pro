@@ -36,13 +36,22 @@ import {
   Phone,
   Briefcase,
   FolderArchive,
-  TrendingUp
+  TrendingUp,
+  HelpCircle,
+  CheckCircle2,
+  AlertTriangle,
+  Globe,
+  HardDrive,
+  X,
+  Laptop,
+  Cloud
 } from 'lucide-react';
 import { PropertyListing, Room, PluginConfig, AdminUser, Hotspot, MaterialItem, ActiveTab } from '../types';
 import { authService, StoredCredentials } from '../utils/authService';
 import { StorageService } from '../services/storageService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
+import { analyzeAndConvertVideoUrl, VideoUrlAnalysis } from '../utils/videoUrlHelper';
 
 interface AdminDashboardProps {
   properties: PropertyListing[];
@@ -123,6 +132,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Selected Room for Video Editor
   const [selectedRoomId, setSelectedRoomId] = useState<string>(currentProperty.rooms[0]?.id || '');
   const selectedRoom = currentProperty.rooms.find((r) => r.id === selectedRoomId) || currentProperty.rooms[0];
+
+  // Video Hosting Guide & Converter Modal States
+  const [showVideoHostingModal, setShowVideoHostingModal] = useState<boolean>(false);
+  const [hostingGuideTab, setHostingGuideTab] = useState<'github' | 'gdrive' | 'devices'>('devices');
+  const [converterInputUrl, setConverterInputUrl] = useState<string>('');
+  const [copiedTsCode, setCopiedTsCode] = useState<boolean>(false);
+  const [copiedJsonCode, setCopiedJsonCode] = useState<boolean>(false);
+  const [importJsonText, setImportJsonText] = useState<string>('');
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   // Initialize session on mount
   useEffect(() => {
@@ -728,6 +746,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Save className={`w-3.5 h-3.5 ${isSavingAll ? 'animate-spin' : ''}`} />
             <span>{isSavingAll ? 'Saving...' : 'Save & Sync All'}</span>
+          </button>
+
+          {/* Permanent GitHub & Cross-Device Sync */}
+          <button
+            type="button"
+            onClick={() => {
+              setHostingGuideTab('devices');
+              setShowVideoHostingModal(true);
+            }}
+            title="Make tour permanent across all devices via GitHub"
+            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[#c5a880] border border-[#c5a880]/40 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+          >
+            <Cloud className="w-3.5 h-3.5 text-[#c5a880]" />
+            <span>GitHub & Devices Sync</span>
           </button>
 
           <button
@@ -1706,26 +1738,59 @@ Manage properties, configure broker profiles, and customize marketing copy acros
               </div>
 
               {/* Video Player Live Preview */}
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
-                <video
-                  key={selectedRoom.videoUrl || selectedRoom.mediaUrl}
-                  src={selectedRoom.videoUrl || selectedRoom.mediaUrl}
-                  controls
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              {(() => {
+                const analysis = analyzeAndConvertVideoUrl(selectedRoom.videoUrl || selectedRoom.mediaUrl);
+                const activePreviewUrl = analysis.streamUrl || selectedRoom.mediaUrl;
+                return (
+                  <div className="space-y-2">
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
+                      <video
+                        key={activePreviewUrl}
+                        src={activePreviewUrl}
+                        controls
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Stream Protocol Indicator */}
+                    <div className="flex items-center justify-between text-[11px] px-1 text-slate-400">
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${analysis.platform === 'gdrive' ? 'bg-amber-400' : analysis.platform === 'github' ? 'bg-emerald-400' : 'bg-blue-400'}`} />
+                        <span>Stream Source: <strong className="text-white capitalize">{analysis.platform === 'gdrive' ? 'Google Drive' : analysis.platform === 'github' ? 'GitHub Cloud' : analysis.platform}</strong></span>
+                      </span>
+                      {analysis.isConverted && (
+                        <span className="text-amber-400 font-mono text-[10px] bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                          Auto-Converted to Direct Stream
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Video URL Config */}
               <div className="space-y-2">
-                <label className="text-xs text-slate-300 block">
-                  Video Walkthrough Stream URL (MP4 / WebM / Sequence):
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-slate-300 block">
+                    Video Walkthrough Stream URL (MP4 / WebM / Sequence):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowVideoHostingModal(true)}
+                    className="text-[11px] text-[#c5a880] hover:text-[#e6d5bd] flex items-center gap-1 transition-colors"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>How to get direct video link (GitHub / Drive)</span>
+                  </button>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={selectedRoom.videoUrl || selectedRoom.mediaUrl}
                     onChange={(e) => handleUpdateRoomField(selectedRoom.id, 'videoUrl', e.target.value)}
+                    placeholder="https://... or /videos/room-1.mp4"
                     className="flex-1 bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:outline-none focus:border-[#c5a880]"
                   />
                   <button
@@ -1734,12 +1799,111 @@ Manage properties, configure broker profiles, and customize marketing copy acros
                       setMediaTargetField({ type: 'roomVideo', roomId: selectedRoom.id });
                       setShowMediaModal(true);
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black text-xs font-bold flex items-center gap-1.5 transition-colors shadow"
+                    className="px-3.5 py-2 rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black text-xs font-bold flex items-center gap-1.5 transition-colors shadow shrink-0"
                   >
                     <Video className="w-3.5 h-3.5" />
                     <span>Select Video</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowVideoHostingModal(true)}
+                    className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#c5a880] text-xs font-semibold flex items-center gap-1.5 transition-colors border border-white/15 shrink-0"
+                    title="Video Hosting Guide & Link Converter"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Hosting Guide</span>
+                  </button>
                 </div>
+
+                {/* Inline Google Drive & GitHub Link Conversion Assistant */}
+                {(() => {
+                  const analysis = analyzeAndConvertVideoUrl(selectedRoom.videoUrl || '');
+                  if (analysis.platform === 'gdrive') {
+                    return (
+                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 mt-2">
+                        <div className="flex items-center justify-between text-xs text-amber-300 font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Google Drive Video Detected</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-amber-400/80">File ID: {analysis.fileId}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          Standard Google Drive share links load an HTML webpage, preventing kinetic scroll scrubbing. VibeTour Pro automatically converts this into a direct stream URL. Ensure your Drive file permissions are set to <strong>"Anyone with the link can view"</strong>.
+                        </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {analysis.directOptions?.map((opt, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                handleUpdateRoomField(selectedRoom.id, 'videoUrl', opt.url);
+                                showToast(`Applied: ${opt.label}`);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 text-[10px] font-mono border border-amber-400/30 transition-colors"
+                            >
+                              Apply: {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (analysis.platform === 'github' && analysis.isConverted) {
+                    return (
+                      <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-2 mt-2">
+                        <div className="flex items-center justify-between text-xs text-emerald-300 font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>GitHub Web Link Converted to Direct Stream</span>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          GitHub web page link was converted to direct raw stream URL.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleUpdateRoomField(selectedRoom.id, 'videoUrl', analysis.streamUrl);
+                            showToast('Applied direct raw stream URL');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-200 text-[10px] font-mono border border-emerald-400/30"
+                        >
+                          Use Direct Stream: {analysis.streamUrl}
+                        </button>
+                      </div>
+                    );
+                  }
+                  if (analysis.platform === 'local') {
+                    return (
+                      <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2 mt-2">
+                        <div className="flex items-center justify-between text-xs text-rose-300 font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Temporary Local File Detected (فایل موقت لوکال ویندوز)</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-rose-400/80">blob:...</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          این ویدیو از حافظه موقت سیستم شما فراخوانی شده و <strong>در سایر دیوایس‌ها (موبایل، تبلت یا لپ‌تاپ دیگران) نمایش داده نخواهد شد</strong>. برای کارکرد روی تمام دستگاه‌ها، ویدیو را در پوشه <code className="text-[#c5a880]">public/videos/</code> پروژه قرار دهید (مانند <code className="text-[#c5a880]">/videos/room-1.mp4</code>) یا در GitHub Releases آپلود کنید.
+                        </p>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHostingGuideTab('github');
+                              setShowVideoHostingModal(true);
+                            }}
+                            className="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-[10px] font-semibold border border-rose-500/30 transition-colors"
+                          >
+                            مشاهده راهنمای گیت‌هاب و ذخیره دائمی
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Checkpoint Decision Gate Config (Auto Checkpoint Pause Gate) */}
@@ -2247,6 +2411,440 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Video Hosting & Direct Link Generator Modal (GitHub vs. Google Drive) */}
+      {showVideoHostingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="bg-[#12141e] border border-white/20 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-white/10 flex items-center justify-between bg-[#161824]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#c5a880]/20 flex items-center justify-center text-[#c5a880] border border-[#c5a880]/30">
+                  <Film className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-white">
+                    Video Walkthrough Hosting & Link Studio
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Direct stream links for kinetic scrubbing with Google Drive & GitHub Pages
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoHostingModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex border-b border-white/10 bg-[#0e1017] px-5 pt-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setHostingGuideTab('github')}
+                className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+                  hostingGuideTab === 'github'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+                <span>Method 1: GitHub Hosting (Zero-Lag 60FPS)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setHostingGuideTab('gdrive')}
+                className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+                  hostingGuideTab === 'gdrive'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <HardDrive className="w-4 h-4" />
+                <span>Method 2: Google Drive Direct Converter</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setHostingGuideTab('devices')}
+                className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+                  hostingGuideTab === 'devices'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Laptop className="w-4 h-4" />
+                <span>Method 3: GitHub & All-Devices Sync (ذخیره دائمی همه دیوایس‌ها)</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+              {hostingGuideTab === 'github' ? (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-slate-300 space-y-2">
+                    <span className="font-bold text-emerald-400 flex items-center gap-1.5 text-xs">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Why GitHub Hosting is 100% recommended for scroll video:
+                    </span>
+                    <p className="text-[11px] leading-relaxed">
+                      GitHub and GitHub Pages natively support <strong>HTTP 206 Partial Content (Byte-Range requests)</strong>. When a user scrolls, the browser instantly fetches only the exact milliseconds needed, enabling zero-latency reverse and forward scrubbing without buffering the entire video!
+                    </p>
+                  </div>
+
+                  {/* Way A */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#c5a880] text-black font-bold flex items-center justify-center text-[10px]">A</span>
+                        <span>Option A: Inside GitHub Repository (<code>public/videos/</code>)</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">Best for standard video files</span>
+                    </div>
+
+                    <ol className="list-decimal list-inside space-y-1.5 text-slate-300 text-[11px] leading-relaxed pl-1">
+                      <li>Place your MP4 video file inside the <code className="text-[#c5a880]">public/videos/</code> directory of your project (e.g. <code className="text-[#c5a880]">public/videos/room-1.mp4</code>).</li>
+                      <li>In VibeTour Pro, set the stream URL to: <code className="text-[#c5a880] font-mono">/videos/room-1.mp4</code>.</li>
+                      <li>When committed and pushed to GitHub Pages, the direct public link automatically becomes:
+                        <div className="mt-1 p-2 bg-[#090a0f] rounded-lg font-mono text-[#c5a880] text-[10px] break-all border border-white/10">
+                          https://[your-github-username].github.io/[repository-name]/videos/room-1.mp4
+                        </div>
+                      </li>
+                    </ol>
+                  </div>
+
+                  {/* Way B */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#c5a880] text-black font-bold flex items-center justify-center text-[10px]">B</span>
+                        <span>Option B: GitHub Releases (Up to 2GB per video, High-Speed CDN)</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-mono">Best for 4K / High-Bitrate files</span>
+                    </div>
+
+                    <ol className="list-decimal list-inside space-y-2 text-slate-300 text-[11px] leading-relaxed pl-1">
+                      <li>Go to your GitHub repository in your browser: <code className="text-[#c5a880]">https://github.com/[user]/[repo]/releases/new</code></li>
+                      <li>In the "Tag version" box, type <code className="text-[#c5a880]">v1.0.0</code> and click "Create new tag".</li>
+                      <li>Under "Attach binaries by dropping them here", drag and drop your <strong>.mp4</strong> video files. GitHub allows up to 2GB per file!</li>
+                      <li>Click the green <strong>"Publish release"</strong> button.</li>
+                      <li>On the published release page, right-click the uploaded <strong>.mp4</strong> file link and select <strong>"Copy Link Address"</strong>.</li>
+                      <li>The copied direct URL will look like:
+                        <div className="mt-1 p-2 bg-[#090a0f] rounded-lg font-mono text-[#c5a880] text-[10px] break-all border border-white/10">
+                          https://github.com/[user]/[repo]/releases/download/v1.0.0/room-1.mp4
+                        </div>
+                      </li>
+                      <li>Paste that link directly into the Chamber Video URL in VibeTour Pro!</li>
+                    </ol>
+                  </div>
+                </div>
+              ) : hostingGuideTab === 'gdrive' ? (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-slate-300 space-y-2">
+                    <span className="font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+                      <AlertTriangle className="w-4 h-4" />
+                      Why normal Google Drive links don't scrub on scroll:
+                    </span>
+                    <p className="text-[11px] leading-relaxed">
+                      A normal share link (e.g. <code className="text-amber-200">drive.google.com/file/d/.../view?usp=sharing</code>) loads Google's HTML preview webpage with UI buttons, not raw video frames! Moreover, Google Drive limits cross-origin byte-range requests for files over 100MB.
+                    </p>
+                  </div>
+
+                  {/* Converter Tool */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <span className="font-bold text-white text-xs block">
+                      1-Click Google Drive Link Converter & Direct Stream Generator:
+                    </span>
+                    
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={converterInputUrl}
+                        onChange={(e) => setConverterInputUrl(e.target.value)}
+                        placeholder="Paste Google Drive share link here: https://drive.google.com/file/d/..."
+                        className="flex-1 bg-[#090a0f] border border-white/15 rounded-xl px-3.5 py-2 text-white font-mono text-xs focus:border-[#c5a880] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Results */}
+                    {converterInputUrl && (() => {
+                      const analysis = analyzeAndConvertVideoUrl(converterInputUrl);
+                      if (analysis.platform === 'gdrive' && analysis.fileId) {
+                        return (
+                          <div className="p-3.5 rounded-xl bg-[#0d0f17] border border-[#c5a880]/30 space-y-3 mt-2">
+                            <div className="flex items-center justify-between text-xs text-white">
+                              <span className="font-bold text-emerald-400 flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" />
+                                File ID extracted: <code className="text-[#c5a880] font-mono">{analysis.fileId}</code>
+                              </span>
+                            </div>
+
+                            <div className="space-y-2">
+                              {analysis.directOptions?.map((opt, i) => (
+                                <div key={i} className="p-2.5 rounded-lg bg-[#141624] border border-white/5 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-[#c5a880] text-[11px]">{opt.label}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleUpdateRoomField(selectedRoom.id, 'videoUrl', opt.url);
+                                        showToast(`Applied ${opt.label} to ${selectedRoom.name}!`);
+                                        setShowVideoHostingModal(false);
+                                      }}
+                                      className="px-2.5 py-1 rounded bg-[#c5a880] hover:bg-[#e6d5bd] text-black font-bold text-[10px] transition-colors"
+                                    >
+                                      Apply to Chamber
+                                    </button>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400">{opt.description}</p>
+                                  <div className="p-1.5 bg-black/60 rounded font-mono text-[9px] text-slate-300 break-all select-all">
+                                    {opt.url}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <p className="text-[11px] text-amber-300">
+                          Please enter a valid Google Drive URL containing a file ID.
+                        </p>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Permissions Checklist */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-2 text-slate-300 text-[11px]">
+                    <span className="font-bold text-white text-xs block">
+                      Required Google Drive Permissions Checklist:
+                    </span>
+                    <ul className="list-disc list-inside space-y-1 pl-1 text-[11px] leading-relaxed">
+                      <li>In Google Drive, right-click the video file and click <strong>Share</strong>.</li>
+                      <li>Under "General access", switch from "Restricted" to <strong>"Anyone with the link"</strong> (Viewer).</li>
+                      <li>If your video is over 100MB, Google Drive will show a virus scan prompt on direct downloads; for large videos, hosting on <strong>GitHub Releases (Method 1)</strong> is strongly recommended for 60fps scrubbing!</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Diagnosis & Core Answer */}
+                  <div className="p-4 rounded-2xl bg-[#c5a880]/10 border border-[#c5a880]/30 text-slate-300 space-y-2">
+                    <span className="font-bold text-[#c5a880] flex items-center gap-1.5 text-xs">
+                      <HelpCircle className="w-4 h-4" />
+                      علت ریست شدن اطلاعات در دستگاه‌های مختلف و راه‌حل قطعی
+                    </span>
+                    <p className="text-[11px] leading-relaxed">
+                      <strong>مشکل چیست؟</strong> هنگامی که در پنل ادمین اطلاعات را ویرایش می‌کنید، داده‌ها در حافظه محلی مرورگر (LocalStorage) همان کامپیوتر ذخیره می‌شوند. همچنین اگر فایلی را از سیستم ویندوز انتخاب کرده باشید، آدرس به شکل <code className="text-amber-300 font-mono">blob:...</code> ایجاد می‌شود که فقط در همان لحظه و در همان مرورگر اعتبار دارد و در گوشی یا دستگاه دیگر باز نمی‌شود.
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-emerald-300">
+                      <strong>راه‌حل دائمی چیست؟</strong> با ذخیره پیکربندی در فایل <code className="font-mono text-white">public/tour-data.json</code> در پروژه و پوش (Push) به گیت‌هاب، هر دستگاهی (موبایل، تبلت، کامپیوتر مشتری) به طور خودکار این فایل را بارگذاری می‌کند و همه اطلاعات و ویدیوها بدون نیاز به هیچ تنظیم مجددی لود می‌شوند.
+                    </p>
+                  </div>
+
+                  {/* Chamber Video Health Check Status */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs flex items-center gap-2">
+                        <Gauge className="w-4 h-4 text-[#c5a880]" />
+                        <span>بررسی سلامت لینک‌های ویدیو در تمام اتاق‌ها (Health Scan)</span>
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {currentProperty.rooms.map((rm) => {
+                        const url = rm.videoUrl || rm.mediaUrl || '';
+                        const isBlob = url.startsWith('blob:') || url.startsWith('data:');
+                        const isRelative = url.startsWith('/') || url.startsWith('./');
+                        const isGithub = url.includes('github');
+                        const isGdrive = url.includes('drive.google.com') || url.includes('googleusercontent.com');
+
+                        return (
+                          <div
+                            key={rm.id}
+                            className="p-2.5 rounded-xl bg-[#090a0f] border border-white/10 flex items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isBlob ? 'bg-rose-500 animate-pulse' : 'bg-emerald-400'}`} />
+                              <div className="truncate">
+                                <span className="font-bold text-white text-[11px]">{rm.name}</span>
+                                <div className="text-[10px] text-slate-400 font-mono truncate max-w-md">
+                                  {url || '(بدون ویدیو)'}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 flex items-center gap-2">
+                              {isBlob ? (
+                                <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[10px] font-semibold border border-rose-500/30">
+                                  ⚠️ موقت (در دیوایس دیگر کار نمیکند)
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold border border-emerald-500/30">
+                                  ✅ پایدار ({isRelative ? 'مسیر پروژه' : isGithub ? 'گیت‌هاب' : isGdrive ? 'گوگل درایو' : 'مستقیم'})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Method A: Download tour-data.json for Git */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#c5a880] text-black font-bold flex items-center justify-center text-[10px]">1</span>
+                        <span>روش اول: ذخیره از طریق فایل public/tour-data.json در گیت‌هاب</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-mono">توصیه شده و آسان</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      روی دکمه زیر کلیک کنید تا فایل کامل اطلاعات، اتاق‌ها و ویدیوها با نام <code className="text-[#c5a880]">tour-data.json</code> دانلود شود. سپس آن را در پوشه <code className="text-[#c5a880]">public/</code> پروژه خود جایگذاری کرده و به گیت‌هاب ارسال نمایید:
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          StorageService.downloadTourDataFile(properties, config);
+                          showToast('فایل tour-data.json با موفقیت دانلود شد.');
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#b3956d] text-black font-bold text-xs flex items-center gap-2 shadow-lg hover:brightness-110 transition-all cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>دانلود فایل tour-data.json</span>
+                      </button>
+                    </div>
+
+                    <div className="p-3 bg-[#090a0f] rounded-xl font-mono text-[10px] text-slate-300 space-y-1 border border-white/10">
+                      <div className="text-slate-500">// دستورات خط فرمان گیت بعد از قرار دادن فایل در پوشه public:</div>
+                      <div className="text-[#c5a880]">git add public/tour-data.json</div>
+                      <div className="text-[#c5a880]">git commit -m "Save tour data permanently"</div>
+                      <div className="text-[#c5a880]">git push</div>
+                    </div>
+                  </div>
+
+                  {/* Method B: Direct Code Replacement in src/data/properties.ts */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#c5a880] text-black font-bold flex items-center justify-center text-[10px]">2</span>
+                        <span>روش دوم: جایگذاری مستقیم در کد منبع (src/data/properties.ts)</span>
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      با این روش، اطلاعات به عنوان پیش‌فرضِ درون کدهای TypeScript ذخیره می‌شود و حتی بدون نیاز به هیچ فایل JSON یا اینترنت کار می‌کند:
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tsCode = StorageService.generatePropertiesTsCode(properties);
+                        navigator.clipboard.writeText(tsCode);
+                        setCopiedTsCode(true);
+                        showToast('کدهای TypeScript در کلیپ‌بورد کپی شد!');
+                        setTimeout(() => setCopiedTsCode(false), 3000);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#c5a880] font-semibold text-xs flex items-center gap-2 border border-[#c5a880]/30 transition-all cursor-pointer"
+                    >
+                      <Copy className="w-4 h-4" />
+                      <span>{copiedTsCode ? 'کد با موفقیت کپی شد! ✅' : 'کپی کدهای آماده برای فایل src/data/properties.ts'}</span>
+                    </button>
+                  </div>
+
+                  {/* Method C: Instant Backup & Cross-Device Restore */}
+                  <div className="p-4 rounded-2xl bg-[#161824] border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#c5a880] text-black font-bold flex items-center justify-center text-[10px]">3</span>
+                        <span>روش سوم: انتقال سریع از طریق کپی و پیست بین دیوایس‌ها (Export / Import)</span>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const json = StorageService.exportPropertiesJson(properties);
+                          navigator.clipboard.writeText(json);
+                          setCopiedJsonCode(true);
+                          showToast('متن JSON با موفقیت کپی شد!');
+                          setTimeout(() => setCopiedJsonCode(false), 3000);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs flex items-center gap-1.5 border border-white/10 transition-colors"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-[#c5a880]" />
+                        <span>{copiedJsonCode ? 'کپی شد! ✅' : 'کپی کل تنظیمات به صورت JSON'}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      <label className="text-[11px] text-slate-400 block">
+                        اگر در دستگاه دیگری هستید، کد JSON را در کادر زیر قرار دهید و دکمه اعمال را بزنید:
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={importJsonText}
+                        onChange={(e) => {
+                          setImportJsonText(e.target.value);
+                          setImportStatus(null);
+                        }}
+                        placeholder="کد JSON را اینجا Paste کنید..."
+                        className="w-full bg-[#090a0f] border border-white/15 rounded-xl p-3 text-white font-mono text-[11px] focus:outline-none focus:border-[#c5a880]"
+                      />
+                      {importStatus && (
+                        <div className="text-[11px] text-amber-300 font-medium">
+                          {importStatus}
+                        </div>
+                      )}
+                      {importJsonText && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const parsed = StorageService.importPropertiesJson(importJsonText);
+                              await StorageService.saveProperties(parsed);
+                              showToast('تنظیمات با موفقیت روی این دستگاه اعمال و ذخیره شد!');
+                              setImportStatus('✅ تنظیمات با موفقیت ذخیره شد. در حال بارگذاری مجدد...');
+                              setTimeout(() => window.location.reload(), 1200);
+                            } catch (err: any) {
+                              setImportStatus(`❌ خطا در اعتبارسنجی JSON: ${err.message}`);
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>اعمال تنظیمات روی این دستگاه</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-white/10 bg-[#161824] flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">
+                Need more diagnostics? Check the <strong>Video Optimizer Studio</strong> tab.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowVideoHostingModal(false)}
+                className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

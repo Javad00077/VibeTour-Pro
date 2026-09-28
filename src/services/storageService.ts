@@ -152,6 +152,42 @@ export class StorageService {
       // Backend not running (e.g. GitHub Pages static host)
     }
 
+    // 2. Attempt static GitHub Pages bundled tour-data.json
+    try {
+      const baseUrl = ((import.meta as any)?.env?.BASE_URL) || './';
+      const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+      const tourJsonUrl = `${cleanBase}tour-data.json?t=${Date.now()}`;
+      
+      const staticRes = await fetch(tourJsonUrl);
+      if (staticRes.ok) {
+        const staticData = await staticRes.json();
+        if (Array.isArray(staticData.properties) && staticData.properties.length > 0) {
+          // Sync to local cache so subsequent loads are immediate
+          try {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(LS_PROPERTIES_KEY, JSON.stringify(staticData.properties));
+              if (staticData.config) {
+                localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(staticData.config));
+              }
+            }
+            await idbSet('properties', staticData.properties);
+            if (staticData.config) {
+              await idbSet('config', staticData.config);
+            }
+          } catch {}
+
+          return {
+            properties: staticData.properties,
+            config: staticData.config ? { ...DEFAULT_CONFIG, ...staticData.config, language: 'en' } : undefined,
+            selectedPropertyId: staticData.selectedPropertyId,
+            activeRoomId: staticData.activeRoomId,
+          };
+        }
+      }
+    } catch {
+      // Static tour-data.json not reachable
+    }
+
     // 2. Attempt IndexedDB
     try {
       const idbProps = await idbGet<PropertyListing[]>('properties');
@@ -275,6 +311,35 @@ export class StorageService {
     try {
       await fetch('/api/reset', { method: 'POST' });
     } catch {}
+  }
+
+  // Export complete tour package (properties + config) as JSON string
+  public static exportFullTourPackageJson(properties: PropertyListing[], config?: PluginConfig): string {
+    return JSON.stringify({
+      properties,
+      config: config || DEFAULT_CONFIG,
+      updatedAt: new Date().toISOString()
+    }, null, 2);
+  }
+
+  // Trigger browser download of tour-data.json for GitHub repository placement
+  public static downloadTourDataFile(properties: PropertyListing[], config?: PluginConfig): void {
+    if (typeof window === 'undefined') return;
+    const jsonStr = this.exportFullTourPackageJson(properties, config);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tour-data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Generate src/data/properties.ts code to permanently hardcode into Git
+  public static generatePropertiesTsCode(properties: PropertyListing[]): string {
+    return `import { PropertyListing, PluginConfig } from '../types';\n\nexport const LUXURY_PROPERTIES: PropertyListing[] = ${JSON.stringify(properties, null, 2)};\n`;
   }
 
   // Export JSON configuration file

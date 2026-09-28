@@ -15,8 +15,13 @@ import {
   Gauge,
   Upload,
   ArrowRight,
-  HardDrive
+  HardDrive,
+  Globe,
+  AlertTriangle,
+  ExternalLink,
+  HelpCircle
 } from 'lucide-react';
+import { analyzeAndConvertVideoUrl, VideoUrlAnalysis } from '../utils/videoUrlHelper';
 
 interface VideoOptimizerGuideProps {
   onApplyVideoToRoom?: (videoUrl: string) => void;
@@ -29,6 +34,8 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [appliedSuccess, setAppliedSuccess] = useState<boolean>(false);
+  const [playbookTab, setPlaybookTab] = useState<'github' | 'gdrive'>('github');
+  const [gdriveHelperInput, setGdriveHelperInput] = useState<string>('');
   
   // Test Results state
   const [testResult, setTestResult] = useState<{
@@ -57,8 +64,8 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
 
   // Run full resilient diagnostics on video link or blob
   const runDiagnosticsWithUrl = (customUrl?: string, customFileName?: string) => {
-    const url = (customUrl || videoUrlInput).trim();
-    if (!url) return;
+    const rawInput = (customUrl || videoUrlInput).trim();
+    if (!rawInput) return;
 
     setIsTesting(true);
     setTestResult(null);
@@ -66,24 +73,36 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
 
     const details: string[] = [];
     let directUrl: 'pass' | 'fail' | 'warn' = 'pass';
-    const isBlob = url.startsWith('blob:');
+    const isBlob = rawInput.startsWith('blob:');
+
+    // Convert via intelligent helper
+    const analysis = analyzeAndConvertVideoUrl(rawInput);
+    const effectiveStreamUrl = analysis.streamUrl;
 
     // 1. Direct URL check
     if (isBlob) {
       directUrl = 'pass';
       details.push(`📁 Local video file (${customFileName || 'GSAP Walkthrough'}) loaded directly from system memory (zero CORS issues).`);
-    } else if (url.includes('drive.google.com') || url.includes('dropbox.com') || url.includes('youtube.com') || url.includes('vimeo.com')) {
-      if (url.includes('drive.google.com') && !url.includes('&export=download')) {
-        directUrl = 'warn';
-        details.push('⚠️ Google Drive URL is a preview page; direct download link or local file is recommended.');
-      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        directUrl = 'fail';
-        details.push('❌ YouTube links are HTML web pages, not direct video streams. Please provide a raw .mp4 or .webm file.');
-      } else if (url.includes('dropbox.com') && url.includes('dl=0')) {
-        directUrl = 'warn';
-        details.push('⚠️ Dropbox link has dl=0; system is attempting automatic raw file redirection.');
+    } else if (analysis.platform === 'gdrive') {
+      directUrl = 'pass';
+      if (analysis.isConverted) {
+        details.push(`⚡ Google Drive link recognized (File ID: ${analysis.fileId})! Auto-converted from HTML preview page to direct Google CDN media stream.`);
       }
-    } else if (!url.match(/\.(mp4|webm|m4v|mov)(\?.*)?$/i)) {
+      details.push('ℹ️ Ensure the Google Drive file permission is set to "Anyone with the link can view".');
+    } else if (analysis.platform === 'github') {
+      directUrl = 'pass';
+      if (analysis.isConverted) {
+        details.push(`⚡ GitHub blob URL converted to direct raw stream URL: ${effectiveStreamUrl}`);
+      } else {
+        details.push('✅ GitHub video stream verified. Native HTTP 206 Byte-Range seeking supported.');
+      }
+    } else if (analysis.platform === 'dropbox') {
+      directUrl = 'pass';
+      details.push('⚡ Dropbox link converted to raw stream mode (?raw=1).');
+    } else if (rawInput.includes('youtube.com') || rawInput.includes('youtu.be')) {
+      directUrl = 'fail';
+      details.push('❌ YouTube links are HTML web pages, not direct video streams. Please provide a raw .mp4 or .webm file.');
+    } else if (!effectiveStreamUrl.match(/\.(mp4|webm|m4v|mov)(\?.*)?$/i)) {
       directUrl = 'warn';
       details.push('ℹ️ URL does not contain a standard video extension; inspecting stream headers.');
     } else {
@@ -105,7 +124,7 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
         }
       }
 
-      video.src = url;
+      video.src = effectiveStreamUrl;
 
       const timeout = setTimeout(() => {
         if (allowCors && !isBlob) {
@@ -122,7 +141,7 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
             resolution: 'Unknown',
             codecHint: 'Server Unreachable',
             isDirectMode: false,
-            testedUrl: url,
+            testedUrl: effectiveStreamUrl,
             details: [
               ...details,
               '❌ Video server did not respond in time. You can select a local MP4 file to test instantaneous rendering.'
@@ -171,7 +190,7 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
             resolution: res,
             codecHint: allowCors ? 'H.264 / Canvas Compatible' : 'H.264 / Direct Hardware Mode (No CORS Required)',
             isDirectMode: !allowCors,
-            testedUrl: url,
+            testedUrl: effectiveStreamUrl,
             details
           });
 
@@ -182,7 +201,7 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
               testVideoRef.current.removeAttribute('crossorigin');
               (testVideoRef.current as any).crossOrigin = null;
             }
-            testVideoRef.current.src = url;
+            testVideoRef.current.src = effectiveStreamUrl;
             testVideoRef.current.load();
           }
         };
@@ -204,7 +223,7 @@ export const VideoOptimizerGuide: React.FC<VideoOptimizerGuideProps> = ({
             resolution: 'Failed to load',
             codecHint: 'Invalid Format or Network Filter',
             isDirectMode: false,
-            testedUrl: url,
+            testedUrl: effectiveStreamUrl,
             details: [
               ...details,
               '❌ Video could not be loaded. Ensure the URL is accessible or upload a local file.'

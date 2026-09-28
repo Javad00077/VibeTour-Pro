@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 const PORT = 3000;
 const DATA_DIR = path.resolve(__dirname, 'data');
 const DB_FILE = path.resolve(DATA_DIR, 'database.json');
+const PUBLIC_TOUR_DATA_FILE = path.resolve(__dirname, 'public', 'tour-data.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -48,6 +49,11 @@ function writeDB(data: Partial<DatabaseSchema>) {
       updatedAt: new Date().toISOString(),
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    try {
+      fs.writeFileSync(PUBLIC_TOUR_DATA_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    } catch (pubErr) {
+      console.warn('Could not write to public/tour-data.json:', pubErr);
+    }
     return updated;
   } catch (err) {
     console.error('Error writing to database file:', err);
@@ -120,6 +126,64 @@ async function startServer() {
       }
     } catch {}
     return res.json({ success: true, message: 'Database reset to defaults' });
+  });
+
+  // GET /api/video-stream?url=...
+  // Transparent streaming proxy for Google Drive and external videos with HTTP 206 Partial Content (Byte-Range) and CORS support
+  app.get('/api/video-stream', async (req, res) => {
+    const targetUrl = req.query.url as string;
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'Missing url query parameter' });
+    }
+
+    try {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      };
+
+      if (req.headers.range) {
+        headers['Range'] = req.headers.range;
+      }
+
+      const upstreamRes = await fetch(targetUrl, {
+        headers,
+        redirect: 'follow',
+      });
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Range, Origin, Content-Type, Accept');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+      res.setHeader('Accept-Ranges', 'bytes');
+
+      const contentType = upstreamRes.headers.get('content-type') || 'video/mp4';
+      res.setHeader('Content-Type', contentType);
+
+      const contentRange = upstreamRes.headers.get('content-range');
+      if (contentRange) {
+        res.setHeader('Content-Range', contentRange);
+      }
+
+      const contentLength = upstreamRes.headers.get('content-length');
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength);
+      }
+
+      res.status(upstreamRes.status);
+
+      if (upstreamRes.body) {
+        const { Readable } = await import('stream');
+        // @ts-ignore
+        const nodeStream = Readable.fromWeb(upstreamRes.body as any);
+        nodeStream.pipe(res);
+      } else {
+        res.end();
+      }
+    } catch (err: any) {
+      console.error('[Video Proxy] Error streaming video:', err);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'Failed to fetch video stream from remote host' });
+      }
+    }
   });
 
   // --- Development & Production Serving ---

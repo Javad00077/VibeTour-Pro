@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { PropertyListing, Room, Hotspot, MaterialItem, PluginConfig } from '../types';
 import { soundEngine } from '../utils/audioSynth';
+import { analyzeAndConvertVideoUrl } from '../utils/videoUrlHelper';
 
 interface CanvasWalkthroughProps {
   property: PropertyListing;
@@ -124,8 +125,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
   useEffect(() => {
     if (directVideoDomRef.current && activeRoom.videoUrl) {
-      if (directVideoDomRef.current.src !== activeRoom.videoUrl) {
-        directVideoDomRef.current.src = activeRoom.videoUrl;
+      const resolved = analyzeAndConvertVideoUrl(activeRoom.videoUrl).streamUrl;
+      if (directVideoDomRef.current.dataset.currentStreamUrl !== resolved) {
+        directVideoDomRef.current.dataset.currentStreamUrl = resolved;
+        directVideoDomRef.current.src = resolved;
         directVideoDomRef.current.load();
       }
     }
@@ -196,8 +199,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
       // 2. Sync or Create Video element if videoUrl is present
       if (room.videoUrl) {
+        const streamTarget = analyzeAndConvertVideoUrl(room.videoUrl).streamUrl;
         const existing = videoElementsRef.current.get(room.id);
-        if (!existing || existing.url !== room.videoUrl) {
+        if (!existing || existing.url !== streamTarget) {
           const video = document.createElement('video');
           video.muted = true;
           video.loop = true;
@@ -211,7 +215,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               // Strip crossOrigin to prevent CORS rejection on hosts without headers
               video.removeAttribute('crossorigin');
               (video as any).crossOrigin = null;
-              video.src = room.videoUrl!;
+              video.src = streamTarget;
               video.load();
             }
           };
@@ -221,9 +225,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           } catch {
             // safe
           }
-          video.src = room.videoUrl;
+          video.src = streamTarget;
           video.load();
-          videoElementsRef.current.set(room.id, { video, url: room.videoUrl });
+          videoElementsRef.current.set(room.id, { video, url: streamTarget });
         }
       } else {
         videoElementsRef.current.delete(room.id);
@@ -485,8 +489,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           if (currRoom.videoUrl) {
             const vid = directVideoDomRef.current;
             if (vid) {
-              if (vid.src !== currRoom.videoUrl) {
-                vid.src = currRoom.videoUrl;
+              const streamTarget = analyzeAndConvertVideoUrl(currRoom.videoUrl).streamUrl;
+              if (vid.dataset.currentStreamUrl !== streamTarget) {
+                vid.dataset.currentStreamUrl = streamTarget;
+                vid.src = streamTarget;
                 vid.load();
               }
               if (vid.duration && !Number.isNaN(vid.duration)) {
