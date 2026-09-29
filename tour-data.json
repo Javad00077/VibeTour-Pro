@@ -21,7 +21,7 @@
         {
           "id": "exterior-approach",
           "subtitle": "Sweeping drone approach across the Mediterranean coastline",
-          "videoUrl": "blob:https://ais-dev-3t6axozktukncpjkzgtr4h-782084776822.us-east1.run.app/870b43d1-5878-417e-8dbd-269c3c22070a",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
           "ambientDescriptionFa": "Approaching the private promontory with panoramic views over the superyacht marina and Mediterranean coastline.",
           "sqft": 8500,
           "mediaUrl": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=85",
@@ -550,7 +550,7 @@
   "config": {
     "scrollSpeedFactor": 0.1
   },
-  "updatedAt": "2026-09-29T04:43:46.143Z",
+  "updatedAt": "2026-09-29T05:02:55.796Z",
   "selectedPropertyId": "monaco-skyline-penthouse",
-  "activeRoomId": "exterior-approach"
+  "activeRoomId": "chef-kitchen"
 }
