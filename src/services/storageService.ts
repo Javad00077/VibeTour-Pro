@@ -1,5 +1,11 @@
 import { PropertyListing, PluginConfig } from '../types';
 import { LUXURY_PROPERTIES, DEFAULT_CONFIG } from '../data/properties';
+import {
+  getCloudTourData,
+  saveCloudTourData,
+  subscribeToCloudTourData,
+  CloudTourData
+} from '../firebase';
 
 const LS_PROPERTIES_KEY = 'vbt_properties_v2';
 const LS_CONFIG_KEY = 'vbt_config_v2';
@@ -64,6 +70,20 @@ async function idbSet(key: string, val: any): Promise<boolean> {
   });
 }
 
+// Helper to strictly sanitize config and enforce 0.1 default scroll speed
+export function sanitizeConfig(cfg?: PluginConfig | null): PluginConfig {
+  const merged: PluginConfig = {
+    ...DEFAULT_CONFIG,
+    ...(cfg || {}),
+    language: 'en'
+  };
+  // Always enforce 0.1 if unset or if legacy 0.5/0.45 default is present
+  if (merged.scrollSpeedFactor === 0.5 || merged.scrollSpeedFactor === 0.45 || !merged.scrollSpeedFactor) {
+    merged.scrollSpeedFactor = 0.1;
+  }
+  return merged;
+}
+
 export class StorageService {
   // Synchronous initial load for seamless React initialization without layout shifts
   public static getInitialProperties(): PropertyListing[] {
@@ -90,18 +110,16 @@ export class StorageService {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed === 'object') {
-            return {
-              ...DEFAULT_CONFIG,
-              ...parsed,
-              language: 'en' // Always enforce English as requested
-            };
+            const clean = sanitizeConfig(parsed);
+            localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(clean));
+            return clean;
           }
         }
       }
     } catch (e) {
       console.warn('Could not read config from localStorage:', e);
     }
-    return { ...DEFAULT_CONFIG, language: 'en' };
+    return sanitizeConfig(null);
   }
 
   public static getInitialSelectedPropertyId(): string | null {
@@ -122,14 +140,49 @@ export class StorageService {
     return null;
   }
 
-  // Load from backend / IndexedDB asynchronously and update if newer
+  // Load from Firebase Firestore / Backend / IndexedDB asynchronously
   public static async loadAsyncData(): Promise<{
     properties?: PropertyListing[];
     config?: PluginConfig;
     selectedPropertyId?: string;
     activeRoomId?: string;
   } | null> {
-    // 1. Attempt backend API first
+    // 1. Attempt Firebase Cloud Firestore first (Global real-time cross-device database)
+    try {
+      const cloudData = await getCloudTourData();
+      if (cloudData && Array.isArray(cloudData.properties) && cloudData.properties.length > 0) {
+        // Cache to LocalStorage and IndexedDB
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(LS_PROPERTIES_KEY, JSON.stringify(cloudData.properties));
+            if (cloudData.config) {
+              localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(cloudData.config));
+            }
+            if (cloudData.selectedPropertyId) {
+              localStorage.setItem(LS_SELECTED_PROP_ID_KEY, cloudData.selectedPropertyId);
+            }
+            if (cloudData.activeRoomId) {
+              localStorage.setItem(LS_ACTIVE_ROOM_ID_KEY, cloudData.activeRoomId);
+            }
+          }
+          await idbSet('properties', cloudData.properties);
+          if (cloudData.config) {
+            await idbSet('config', cloudData.config);
+          }
+        } catch {}
+
+        return {
+          properties: cloudData.properties,
+          config: sanitizeConfig(cloudData.config),
+          selectedPropertyId: cloudData.selectedPropertyId,
+          activeRoomId: cloudData.activeRoomId,
+        };
+      }
+    } catch (err) {
+      console.warn('[Firebase Firestore] Cloud database read notice:', err);
+    }
+
+    // 2. Attempt backend API second (if local Express server is running)
     try {
       const res = await fetch('/api/properties');
       if (res.ok) {
@@ -142,7 +195,7 @@ export class StorageService {
 
           return {
             properties: data.properties,
-            config: cfgData ? { ...DEFAULT_CONFIG, ...cfgData, language: 'en' } : undefined,
+            config: sanitizeConfig(cfgData),
             selectedPropertyId: stateData?.selectedPropertyId,
             activeRoomId: stateData?.activeRoomId,
           };
@@ -152,7 +205,7 @@ export class StorageService {
       // Backend not running (e.g. GitHub Pages static host)
     }
 
-    // 2. Attempt static GitHub Pages bundled tour-data.json
+    // 3. Attempt static GitHub Pages bundled tour-data.json
     try {
       const baseUrl = ((import.meta as any)?.env?.BASE_URL) || './';
       const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -162,23 +215,19 @@ export class StorageService {
       if (staticRes.ok) {
         const staticData = await staticRes.json();
         if (Array.isArray(staticData.properties) && staticData.properties.length > 0) {
-          // Sync to local cache so subsequent loads are immediate
+          const cleanCfg = sanitizeConfig(staticData.config);
           try {
             if (typeof window !== 'undefined') {
               localStorage.setItem(LS_PROPERTIES_KEY, JSON.stringify(staticData.properties));
-              if (staticData.config) {
-                localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(staticData.config));
-              }
+              localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(cleanCfg));
             }
             await idbSet('properties', staticData.properties);
-            if (staticData.config) {
-              await idbSet('config', staticData.config);
-            }
+            await idbSet('config', cleanCfg);
           } catch {}
 
           return {
             properties: staticData.properties,
-            config: staticData.config ? { ...DEFAULT_CONFIG, ...staticData.config, language: 'en' } : undefined,
+            config: cleanCfg,
             selectedPropertyId: staticData.selectedPropertyId,
             activeRoomId: staticData.activeRoomId,
           };
@@ -188,7 +237,7 @@ export class StorageService {
       // Static tour-data.json not reachable
     }
 
-    // 2. Attempt IndexedDB
+    // 4. Attempt local IndexedDB
     try {
       const idbProps = await idbGet<PropertyListing[]>('properties');
       const idbCfg = await idbGet<PluginConfig>('config');
@@ -198,7 +247,7 @@ export class StorageService {
       if (idbProps && Array.isArray(idbProps) && idbProps.length > 0) {
         return {
           properties: idbProps,
-          config: idbCfg ? { ...DEFAULT_CONFIG, ...idbCfg, language: 'en' } : undefined,
+          config: sanitizeConfig(idbCfg),
           selectedPropertyId: idbSelected || undefined,
           activeRoomId: idbRoom || undefined,
         };
@@ -208,7 +257,7 @@ export class StorageService {
     return null;
   }
 
-  // Save all properties to LocalStorage, IndexedDB, and Backend API
+  // Save all properties to LocalStorage, IndexedDB, Firebase Firestore, and Backend API
   public static async saveProperties(properties: PropertyListing[]): Promise<boolean> {
     let lsSuccess = false;
     try {
@@ -220,8 +269,16 @@ export class StorageService {
       console.warn('LocalStorage quota or write error (will persist in IndexedDB):', e);
     }
 
-    // Always persist to IndexedDB (virtually unlimited quota for high-res images and many rooms)
+    // Always persist to IndexedDB
     const idbSuccess = await idbSet('properties', properties);
+
+    // Save to Firebase Firestore Cloud Database for all global devices
+    const currentCfg = StorageService.getInitialConfig();
+    const currentPropId = StorageService.getInitialSelectedPropertyId() || properties[0]?.id;
+    const currentRoomId = StorageService.getInitialActiveRoomId() || properties[0]?.rooms[0]?.id;
+    saveCloudTourData(properties, currentCfg, currentPropId, currentRoomId).catch((err) => {
+      console.warn('[Firebase Firestore] Cloud save notice:', err);
+    });
 
     // Save to Backend API if server is alive
     try {
@@ -239,10 +296,7 @@ export class StorageService {
 
   // Save configuration
   public static async saveConfig(config: PluginConfig): Promise<boolean> {
-    const cleanConfig: PluginConfig = {
-      ...config,
-      language: 'en' // English-only enforcement
-    };
+    const cleanConfig: PluginConfig = sanitizeConfig(config);
 
     let lsSuccess = false;
     try {
@@ -255,6 +309,14 @@ export class StorageService {
     }
 
     await idbSet('config', cleanConfig);
+
+    // Save to Firebase Cloud Firestore
+    const currentProps = StorageService.getInitialProperties();
+    const currentPropId = StorageService.getInitialSelectedPropertyId();
+    const currentRoomId = StorageService.getInitialActiveRoomId();
+    saveCloudTourData(currentProps, cleanConfig, currentPropId || undefined, currentRoomId || undefined).catch((err) => {
+      console.warn('[Firebase Firestore] Cloud config save notice:', err);
+    });
 
     try {
       await fetch('/api/config', {
@@ -291,6 +353,9 @@ export class StorageService {
       });
     } catch {}
   }
+
+  // Expose Realtime Firestore subscription for seamless multi-device live updates
+  public static subscribeToCloudTourData = subscribeToCloudTourData;
 
   // Hard Reset
   public static async resetAll(defaultProps: PropertyListing[], defaultCfg: PluginConfig): Promise<void> {

@@ -427,7 +427,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       await StorageService.saveProperties(properties);
       await StorageService.saveConfig(config);
       await StorageService.saveActiveState(currentProperty.id, selectedRoomId);
-      showToast('All property tours, chambers and settings permanently saved to storage & backend!');
+      showToast('All property tours, chambers & settings saved to Firebase Cloud Firestore and synchronized!');
     } catch {
       showToast('Could not complete storage save.');
     } finally {
@@ -731,10 +731,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Top Header Actions */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-          {/* Storage Sync Status Pill */}
+          {/* Cloud Firestore Sync Status Pill */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-mono text-[11px]">Storage Synced</span>
+            <span className="font-mono text-[11px]">Firebase Cloud Live</span>
           </div>
 
           {/* Explicit Save & Sync Button */}
@@ -2007,7 +2007,7 @@ When user scrolls, motion pauses at designated checkpoint and prompts room navig
                 </div>
               </div>
               <span className="font-mono text-sm text-[#c5a880] font-bold">
-                {((config.scrollSpeedFactor || 0.45) * 100).toFixed(0)}% Speed
+                {((config.scrollSpeedFactor || 0.1) * 100).toFixed(0)}% Speed
               </span>
             </div>
 
@@ -2019,10 +2019,10 @@ When user scrolls, motion pauses at designated checkpoint and prompts room navig
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {[
-                  { label: '0.25x Ultra Slow', val: 0.25, desc: 'Ultra Slow' },
-                  { label: '0.45x Cinematic', val: 0.45, desc: 'Cinematic Default' },
-                  { label: '0.80x Balanced', val: 0.8, desc: 'Balanced' },
-                  { label: '1.20x Dynamic', val: 1.2, desc: 'Fast Responsive' },
+                  { label: '0.10x Luxury Slow', val: 0.1, desc: 'Fixed Default (Ultra-Smooth)' },
+                  { label: '0.25x Ultra Slow', val: 0.25, desc: 'Cinematic Slow' },
+                  { label: '0.45x Balanced', val: 0.45, desc: 'Balanced' },
+                  { label: '0.80x Fast', val: 0.8, desc: 'Responsive' },
                 ].map((item) => (
                   <button
                     key={item.val}
@@ -2032,7 +2032,7 @@ When user scrolls, motion pauses at designated checkpoint and prompts room navig
                       showToast(`Scroll speed set to ${item.val}x applied.`);
                     }}
                     className={`p-3 rounded-2xl border text-right transition-all ${
-                      Math.abs((config.scrollSpeedFactor || 0.45) - item.val) < 0.05
+                      Math.abs((config.scrollSpeedFactor || 0.1) - item.val) < 0.05
                         ? 'bg-[#c5a880] text-black font-bold border-[#c5a880] shadow-lg'
                         : 'bg-[#141624] text-slate-300 border-white/10 hover:border-[#c5a880]/50'
                     }`}
@@ -2048,15 +2048,15 @@ When user scrolls, motion pauses at designated checkpoint and prompts room navig
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Fine Tune Speed Factor:</span>
                   <span className="font-mono text-[#c5a880] font-bold">
-                    {(config.scrollSpeedFactor || 0.45).toFixed(2)}x
+                    {(config.scrollSpeedFactor || 0.1).toFixed(2)}x
                   </span>
                 </div>
                 <input
                   type="range"
-                  min="0.1"
+                  min="0.05"
                   max="2.0"
                   step="0.05"
-                  value={config.scrollSpeedFactor || 0.45}
+                  value={config.scrollSpeedFactor || 0.1}
                   onChange={(e) => onUpdateConfig({ ...config, scrollSpeedFactor: parseFloat(e.target.value) })}
                   className="w-full accent-[#c5a880] cursor-pointer h-2"
                 />

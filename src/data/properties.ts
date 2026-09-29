@@ -527,7 +527,7 @@ export const LUXURY_PROPERTIES: PropertyListing[] = [
 
 export const DEFAULT_CONFIG: PluginConfig = {
   scrubSmoothing: 2.2,
-  scrollSpeedFactor: 0.5,
+  scrollSpeedFactor: 0.1,
   enableGlobalCheckpointGates: true,
   cacheBufferThreshold: 25,
   enableWorkerPool: true,

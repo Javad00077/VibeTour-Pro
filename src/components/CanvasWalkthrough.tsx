@@ -90,9 +90,12 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   const [hoveredBeacon, setHoveredBeacon] = useState<string | null>(null);
   const isFa = false;
 
-  // Scroll Speed Adjustment
-  const [scrollSpeed, setScrollSpeed] = useState<number>(config.scrollSpeedFactor || 0.5);
-  const scrollSpeedRef = useRef<number>(config.scrollSpeedFactor || 0.5);
+  // Scroll Speed Adjustment (Default fixed to 0.1 for ultra-smooth luxury cinematic motion)
+  const initialSpeed = (config.scrollSpeedFactor === 0.5 || config.scrollSpeedFactor === 0.45 || !config.scrollSpeedFactor)
+    ? 0.1
+    : config.scrollSpeedFactor;
+  const [scrollSpeed, setScrollSpeed] = useState<number>(initialSpeed);
+  const scrollSpeedRef = useRef<number>(initialSpeed);
   const [showSpeedPanel, setShowSpeedPanel] = useState<boolean>(false);
   const [enableGates, setEnableGates] = useState<boolean>(config.enableGlobalCheckpointGates !== false);
 
@@ -107,10 +110,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   }, [scrollSpeed]);
 
   useEffect(() => {
-    if (config.scrollSpeedFactor) {
-      setScrollSpeed(config.scrollSpeedFactor);
-      scrollSpeedRef.current = config.scrollSpeedFactor;
-    }
+    const raw = config.scrollSpeedFactor;
+    const targetSpeed = (raw === 0.5 || raw === 0.45 || !raw) ? 0.1 : raw;
+    setScrollSpeed(targetSpeed);
+    scrollSpeedRef.current = targetSpeed;
   }, [config.scrollSpeedFactor]);
 
   useEffect(() => {
@@ -985,10 +988,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                       </span>
                       <div className="grid grid-cols-2 gap-1.5">
                         {[
-                          { val: 0.25, labelEn: '0.25x Ultra Slow' },
-                          { val: 0.5, labelEn: '0.5x Cinematic' },
-                          { val: 1.0, labelEn: '1.0x Standard' },
-                          { val: 1.8, labelEn: '1.8x Fast' },
+                          { val: 0.1, labelEn: '0.10x Luxury (Default Fixed)' },
+                          { val: 0.25, labelEn: '0.25x Cinematic' },
+                          { val: 0.5, labelEn: '0.50x Balanced' },
+                          { val: 1.0, labelEn: '1.00x Fast' },
                         ].map((item) => (
                           <button
                             key={item.val}

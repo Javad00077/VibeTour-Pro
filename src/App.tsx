@@ -37,7 +37,7 @@ import { VideoOptimizerGuide } from './components/VideoOptimizerGuide';
 import { HeaderNav } from './components/HeaderNav';
 import { AdminDashboard } from './components/AdminDashboard';
 import { authService } from './utils/authService';
-import { StorageService } from './services/storageService';
+import { StorageService, sanitizeConfig } from './services/storageService';
 
 export default function App() {
   const [properties, setProperties] = useState<PropertyListing[]>(() => {
@@ -78,7 +78,7 @@ export default function App() {
     return authService.getSession().isAuthenticated;
   });
 
-  // Asynchronous background hydration from backend API or IndexedDB
+  // Asynchronous background hydration from Firebase Cloud Firestore / backend API
   useEffect(() => {
     StorageService.loadAsyncData().then((data) => {
       if (!data) return;
@@ -96,9 +96,30 @@ export default function App() {
         }
       }
       if (data.config) {
-        setConfig({ ...data.config, language: 'en' });
+        setConfig(sanitizeConfig(data.config));
       }
     });
+
+    // Real-time cloud subscription across all devices
+    const unsub = StorageService.subscribeToCloudTourData((cloudData) => {
+      if (cloudData.properties && cloudData.properties.length > 0) {
+        setProperties(cloudData.properties);
+        if (cloudData.selectedPropertyId) {
+          const match = cloudData.properties.find((p) => p.id === cloudData.selectedPropertyId);
+          if (match) setCurrentProperty(match);
+        }
+        if (cloudData.activeRoomId) {
+          setActiveRoomId(cloudData.activeRoomId);
+        }
+      }
+      if (cloudData.config) {
+        setConfig(sanitizeConfig(cloudData.config));
+      }
+    });
+
+    return () => {
+      if (unsub) unsub();
+    };
   }, []);
 
   // Sync auth state across sessions
@@ -175,7 +196,7 @@ export default function App() {
 
   // Update config settings
   const handleUpdateConfig = useCallback((newCfg: PluginConfig) => {
-    const enConfig: PluginConfig = { ...newCfg, language: 'en' };
+    const enConfig: PluginConfig = sanitizeConfig(newCfg);
     setConfig(enConfig);
     StorageService.saveConfig(enConfig);
   }, []);

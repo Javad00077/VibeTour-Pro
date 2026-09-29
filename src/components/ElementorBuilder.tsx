@@ -914,27 +914,27 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
             <div className="p-4 bg-[#161822] rounded-2xl border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-white">
-                  Scroll Speed Multiplier (Lower = More Cinematic)
+                  Scroll Speed Multiplier (Fixed Default 0.1x for Luxury Smoothness)
                 </label>
                 <span className="font-mono text-xs font-bold text-[#c5a880]">
-                  {((config.scrollSpeedFactor || 0.45) * 100).toFixed(0)}% Speed
+                  {((config.scrollSpeedFactor || 0.1) * 100).toFixed(0)}% Speed
                 </span>
               </div>
 
               {/* Quick Presets */}
               <div className="grid grid-cols-4 gap-1.5 pt-1">
                 {[
-                  { label: '0.25x Ultra Slow', val: 0.25 },
-                  { label: '0.45x Cinematic', val: 0.45 },
-                  { label: '0.80x Balanced', val: 0.8 },
-                  { label: '1.20x Dynamic', val: 1.2 },
+                  { label: '0.10x Luxury Fixed', val: 0.1 },
+                  { label: '0.25x Cinematic', val: 0.25 },
+                  { label: '0.50x Balanced', val: 0.5 },
+                  { label: '1.00x Fast', val: 1.0 },
                 ].map((p) => (
                   <button
                     key={p.val}
                     type="button"
                     onClick={() => onUpdateConfig({ ...config, scrollSpeedFactor: p.val })}
                     className={`py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                      Math.abs((config.scrollSpeedFactor || 0.45) - p.val) < 0.05
+                      Math.abs((config.scrollSpeedFactor || 0.1) - p.val) < 0.05
                         ? 'bg-[#c5a880] text-black shadow'
                         : 'bg-white/5 hover:bg-white/15 text-slate-300'
                     }`}
@@ -946,10 +946,10 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
 
               <input
                 type="range"
-                min="0.15"
+                min="0.05"
                 max="2.0"
                 step="0.05"
-                value={config.scrollSpeedFactor || 0.45}
+                value={config.scrollSpeedFactor || 0.1}
                 onChange={(e) => onUpdateConfig({ ...config, scrollSpeedFactor: parseFloat(e.target.value) })}
                 className="w-full accent-[#c5a880] cursor-pointer"
               />
