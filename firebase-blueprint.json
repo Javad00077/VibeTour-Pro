@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "TourPackage": {
+      "title": "TourPackage",
+      "description": "Complete master package containing properties, chambers, and tour configuration",
+      "type": "object",
+      "properties": {
+        "properties": {
+          "type": "array",
+          "description": "List of property listings and their rooms/hotspots"
+        },
+        "config": {
+          "type": "object",
+          "description": "Plugin configuration and branding settings"
+        },
+        "selectedPropertyId": {
+          "type": "string",
+          "description": "Currently active property ID"
+        },
+        "activeRoomId": {
+          "type": "string",
+          "description": "Currently active chamber/room ID"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["properties", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/tour_data/{docId}": {
+      "schema": "TourPackage",
+      "description": "Master tour package document"
+    },
+    "/properties/{propertyId}": {
+      "schema": "TourPackage",
+      "description": "Individual property listing"
+    },
+    "/config/{configId}": {
+      "schema": "TourPackage",
+      "description": "Tour configuration"
+    },
+    "/app_state/{docId}": {
+      "schema": "TourPackage",
+      "description": "Active app state"
+    }
+  }
+}

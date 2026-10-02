@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── PUBLIC READ ─────────────────────────────────────────────
+    // Every visitor anywhere in the world can load the published
+    // tour package. No auth required for reads.
+    match /tour_data/tour_package {
+      allow read: if true;
+
+      // ── OWNER-ONLY WRITE ──────────────────────────────────────
+      // Nothing can ever be written (create / update / delete)
+      // unless the signed-in Google account is EXACTLY the owner's
+      // Gmail. All other accounts — including anonymous users —
+      // are rejected by the server, not just the UI.
+      allow write: if request.auth != null
+                   && request.auth.token.email == 'kazeme.javad@gmail.com';
+    }
+
+    // Any other collection: readable by owner only, written by owner only.
+    // (Visitors only need tour_data/tour_package.)
+    match /{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.token.email == 'kazeme.javad@gmail.com';
+    }
+  }
+}
