@@ -1,571 +1,450 @@
 {
+  "properties": [
+    {
+      "id": "royal-palm-estate",
+      "title": "Royal Palm Estate",
+      "subtitle": "Oceanfront Modern Masterpiece • 1.4-Acre Private Bluff",
+      "tagline": "Where Architecture Meets the Horizon",
+      "location": "Montecito, California",
+      "price": "$34,900,000",
+      "numericPrice": 34900000,
+      "currency": "USD",
+      "beds": 6,
+      "baths": 9,
+      "sqft": 13400,
+      "mlsNumber": "MT-90210-ROYAL",
+      "architect": "Atelier Pacific Design Group",
+      "yearBuilt": 2025,
+      "heroImage": "video/posters/ch01.jpg",
+      "rooms": [
+        {
+          "id": "twilight-approach",
+          "name": "Twilight Pool Approach",
+          "nameFa": "ورود غروب از روی استخر",
+          "shortName": "01. Approach",
+          "shortNameFa": "۰۱. ورود",
+          "subtitle": "Gliding across the vanishing-edge pool toward the illuminated glass façade",
+          "subtitleFa": "حرکت روی استخر بی‌نهایت به سمت نمای شیشه‌ای نورانی",
+          "icon": "Compass",
+          "startProgress": 0,
+          "endProgress": 0.24,
+          "totalFrames": 72,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch01.jpg",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "video/posters/ch01.jpg",
+          "ambientDescription": "The film opens at blue hour: the camera skims the mirror-calm infinity pool, the residence glowing in layered cove lighting beyond the water.",
+          "ambientDescriptionFa": "فیلم در ساعت آبی آغاز می‌شود؛ دوربین روی آب آرام استخر بی‌نهایت سُر می‌خورد و عمارت با نورپردازی پنهان در آن‌سوی آب می‌درخشد.",
+          "sqft": 4200,
+          "exposure": "West / Pacific Sunset",
+          "ceilingHeight": "Open Air",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-facade-glass",
+              "x": 52,
+              "y": 38,
+              "frameRange": [
+                18,
+                70
+              ],
+              "title": "Floor-to-Ceiling Glass Curtain Wall",
+              "category": "Architectural",
+              "description": "A seamless 40-meter glazed façade engineered for coastal salt air, dissolving the boundary between pool terrace and great room.",
+              "spec": "Coastal-Rated Low-E Glazing System",
+              "priceTag": "$1,850,000"
+            },
+            {
+              "id": "hs-cove-lighting",
+              "x": 30,
+              "y": 55,
+              "frameRange": [
+                8,
+                60
+              ],
+              "title": "Architectural Cove Lighting Scene",
+              "category": "Design",
+              "description": "Programmable Lutron scene lighting traces the roofline and pool basin, choreographed to dusk for maximum drama.",
+              "spec": "Ketra Full-Spectrum tunable LEDs",
+              "priceTag": "$120,000"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-pool-basin",
+              "name": "Midnight Quartz Pool Interior",
+              "category": "Pool Finishes",
+              "origin": "Vicenza, Italy",
+              "finish": "Hand-troweled exposed aggregate",
+              "description": "A deep sapphire-quartz finish turns the pool into liquid onyx at dusk, mirroring the illuminated residence.",
+              "swatchUrl": "video/posters/ch01.jpg",
+              "spec": "Exposed aggregate, 10-year warranty",
+              "ecoCert": "NSF/ANSI 50 Certified",
+              "x": 35,
+              "y": 78
+            },
+            {
+              "id": "mat-terrace-stone",
+              "name": "Honed Basalt Pool Deck",
+              "category": "Stone & Cladding",
+              "origin": "Xiamen, China",
+              "finish": "Honed, heat-resistant",
+              "description": "Velvet-smooth volcanic basalt stays cool underfoot beside the water and deepens the monolithic palette.",
+              "swatchUrl": "video/posters/ch02.jpg",
+              "spec": "20mm pavers, Mohs 6.5",
+              "x": 68,
+              "y": 82
+            }
+          ]
+        },
+        {
+          "id": "facade-reveal",
+          "name": "Glass Façade Reveal",
+          "nameFa": "نمای شیشه‌ای و ورودی",
+          "shortName": "02. Façade",
+          "shortNameFa": "۰۲. نما",
+          "subtitle": "The full modern pavilion comes into frame across the reflecting water",
+          "subtitleFa": "نمای کامل عمارت مدرن در قاب آب انعکاسی",
+          "icon": "Sun",
+          "startProgress": 0.24,
+          "endProgress": 0.47,
+          "totalFrames": 69,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch02.jpg",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "video/posters/ch02.jpg",
+          "ambientDescription": "The approach widens: symmetrical pavilions, floating roof planes and the glass great room arrive together in one composed frame.",
+          "ambientDescriptionFa": "زاویه باز می‌شود: پاویون‌های متقارن، سقف‌های شناور و گریت‌روم شیشه‌ای در یک قاب واحد ظاهر می‌شوند.",
+          "sqft": 13400,
+          "exposure": "West / Panoramic Ocean",
+          "ceilingHeight": "Open Air",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-floating-roof",
+              "x": 50,
+              "y": 30,
+              "frameRange": [
+                10,
+                65
+              ],
+              "title": "Cantilevered Roof Planes",
+              "category": "Architectural",
+              "description": "Deep roof overhangs appear to float on razor-thin fascia lines, shading the glass while framing ocean views.",
+              "spec": "Steel moment-frame, 4m cantilever",
+              "priceTag": "$640,000"
+            },
+            {
+              "id": "hs-royal-palm-brand",
+              "x": 62,
+              "y": 42,
+              "frameRange": [
+                20,
+                69
+              ],
+              "title": "ROYAL PALM Brand Film",
+              "category": "Design",
+              "description": "This master film is the estate’s signature brand asset — the same footage powers every chapter of the interactive tour.",
+              "spec": "Master 720p30, all-intra keyframes",
+              "priceTag": "Signature Asset"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-stucco-white",
+              "name": "Mineral White Render",
+              "category": "Stone & Cladding",
+              "origin": "Stuttgart, Germany",
+              "finish": "Fine aggregate, hand-floated",
+              "description": "Breathable mineral stucco keeps the volumes crisp white through coastal humidity without cracking.",
+              "swatchUrl": "video/posters/ch02.jpg",
+              "spec": "Class A fire rated",
+              "x": 30,
+              "y": 45
+            },
+            {
+              "id": "mat-reflecting-edge",
+              "name": "Vanishing-Edge Weir Wall",
+              "category": "Pool Finishes",
+              "origin": "Custom cast-in-place",
+              "finish": "Polished white precast",
+              "description": "A knife-edge weir lets the pool surface merge with the horizon line from every principal room.",
+              "swatchUrl": "video/posters/ch01.jpg",
+              "spec": "Cast-in-place structural acrylic interface",
+              "x": 45,
+              "y": 80
+            }
+          ]
+        },
+        {
+          "id": "threshold-entry",
+          "name": "The Threshold Entry",
+          "nameFa": "آستانه ورودی شیشه‌ای",
+          "shortName": "03. Entry",
+          "shortNameFa": "۰۳. ورودی",
+          "subtitle": "Crossing the glass line into the warm ocean-view interior",
+          "subtitleFa": "عبور از خط شیشه به فضای گرم داخل",
+          "icon": "Flame",
+          "startProgress": 0.47,
+          "endProgress": 0.61,
+          "totalFrames": 42,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch03.jpg",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "video/posters/ch03.jpg",
+          "ambientDescription": "The cut lands inside the entry gallery: the same dusk sky now framed by the interior, water views pulling straight through the house.",
+          "ambientDescriptionFa": "نما داخلی می‌شود: همان آسمان غروب حالا از داخل قاب شده و نمای آب مستقیم از یک‌سوی خانه به سوی دیگر ادامه دارد.",
+          "sqft": 900,
+          "exposure": "South / Ocean Axis",
+          "ceilingHeight": "14 Feet",
+          "isHub": true,
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-entry-axis",
+              "x": 48,
+              "y": 50,
+              "frameRange": [
+                4,
+                40
+              ],
+              "title": "Straight-Line Ocean Axis",
+              "category": "Architectural",
+              "description": "Entry, gallery and great room share one unbroken sightline to the Pacific — the estate’s organizing gesture.",
+              "spec": "Aligned structural bays, zero mullions",
+              "priceTag": "Signature Gesture"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-entry-oak",
+              "name": "Wide-Plank White Oak Floors",
+              "category": "Flooring",
+              "origin": "Appalachians, USA",
+              "finish": "Natural matte hardwax oil",
+              "description": "Continuous oak runs from threshold to great room, hiding expansion joints for an unbroken plane.",
+              "swatchUrl": "video/posters/ch03.jpg",
+              "spec": "260mm engineered plank",
+              "x": 40,
+              "y": 70
+            }
+          ]
+        },
+        {
+          "id": "grand-salon",
+          "name": "Oceanfront Grand Salon",
+          "nameFa": "سالن بزرگ رو به اقیانوس",
+          "shortName": "04. Great Room",
+          "shortNameFa": "۰۴. سالن",
+          "subtitle": "Sunken lounge, fire tables and the concert piano beneath the ocean panorama",
+          "subtitleFa": "لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس",
+          "icon": "Tv",
+          "startProgress": 0.61,
+          "endProgress": 0.82,
+          "totalFrames": 63,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch04.jpg",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "video/posters/ch04.jpg",
+          "ambientDescription": "The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.",
+          "ambientDescriptionFa": "قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.",
+          "sqft": 2450,
+          "exposure": "Full West / Ocean Panorama",
+          "ceilingHeight": "16 Feet",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-fire-tables",
+              "x": 55,
+              "y": 62,
+              "frameRange": [
+                6,
+                60
+              ],
+              "title": "Sculptural Fire Tables",
+              "category": "Design",
+              "description": "Cast-stone fire tables anchor the conversation pits, mixing live flame with the cool palette of stone and linen.",
+              "spec": "Linear ethanol burners, remote modulated",
+              "priceTag": "$72,000"
+            },
+            {
+              "id": "hs-piano",
+              "x": 76,
+              "y": 55,
+              "frameRange": [
+                10,
+                63
+              ],
+              "title": "Concert Grand Piano",
+              "category": "Design",
+              "description": "A polished grand piano sits on the ocean axis — the salon doubles as an intimate recital hall at sunset.",
+              "spec": "Full-size concert grand, ivory finish",
+              "priceTag": "$190,000"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-salon-boucle",
+              "name": "Ivory Bouclé Lounge Seating",
+              "category": "Fabrics & Upholstery",
+              "origin": "Piedmont, Italy",
+              "finish": "Heavy loop weave, feather-wrapped",
+              "description": "Modular bouclé sofas wrap the fire pits in soft, tactile ivory — comfort engineered to the tune of 100,000 rubs.",
+              "swatchUrl": "video/posters/ch04.jpg",
+              "spec": "100,000 Martindale rubs",
+              "x": 35,
+              "y": 66
+            },
+            {
+              "id": "mat-salon-ceiling",
+              "name": "Battened Oak Ceiling",
+              "category": "Wood & Joinery",
+              "origin": "Fontainebleau, France",
+              "finish": "Smoked, ultra-matte",
+              "description": "Slim oak battens space the ceiling and conceal linear AC and acoustic damping above the salon.",
+              "swatchUrl": "video/posters/ch05.jpg",
+              "spec": "FSC oak, acoustic felt backing",
+              "x": 60,
+              "y": 28
+            }
+          ]
+        },
+        {
+          "id": "salon-panorama",
+          "name": "Sunset Panorama Wall",
+          "nameFa": "پانورامای غروب",
+          "shortName": "05. Panorama",
+          "shortNameFa": "۰۵. پانوراما",
+          "subtitle": "The camera drifts along 18 meters of uninterrupted ocean glass",
+          "subtitleFa": "دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند",
+          "icon": "Sun",
+          "startProgress": 0.82,
+          "endProgress": 0.92,
+          "totalFrames": 30,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch05.jpg",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "video/posters/ch05.jpg",
+          "ambientDescription": "Every seat owns the horizon: the drift reveals the full panorama wall, palm silhouettes and the last light on the water.",
+          "ambientDescriptionFa": "هر صندلی رو به افق است: حرکت دوربین کل دیوار پانوراما، سایه نخل‌ها و آخرین نور روی آب را نشان می‌دهد.",
+          "sqft": 2450,
+          "exposure": "West / Direct Sunset",
+          "ceilingHeight": "16 Feet",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-panorama-glass",
+              "x": 50,
+              "y": 40,
+              "frameRange": [
+                2,
+                30
+              ],
+              "title": "18-Meter Seamless Ocean Glass",
+              "category": "Architectural",
+              "description": "Sliding glass bays retract fully into pockets, converting the salon into an open-air pavilion in under a minute.",
+              "spec": "Motorized pocketing sliders, 110V",
+              "priceTag": "$520,000"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-panorama-frame",
+              "name": "Bronze-Anodized Slider Frames",
+              "category": "Metals & Frames",
+              "origin": "Zurich, Switzerland",
+              "finish": "Micro-brushed 25-micron anodized",
+              "description": "Slim bronze sightlines keep the panorama photographically clean and resist salt-air corrosion.",
+              "swatchUrl": "video/posters/ch05.jpg",
+              "spec": "Qualicoat Class 3 architectural alloy",
+              "x": 55,
+              "y": 35
+            }
+          ]
+        },
+        {
+          "id": "evening-finale",
+          "name": "Evening in the Salon",
+          "nameFa": "شب در سالن",
+          "shortName": "06. Finale",
+          "shortNameFa": "۰۶. پایان",
+          "subtitle": "Firelight, deep seating and the estate at its most cinematic hour",
+          "subtitleFa": "نور آتش، نشیمن گرم و سینمایی‌ترین ساعت عمارت",
+          "icon": "Flame",
+          "startProgress": 0.92,
+          "endProgress": 1,
+          "totalFrames": 24,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch06.jpg",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "video/posters/ch06.jpg",
+          "ambientDescription": "The film closes on the salon at night: flames reflected in the glass, the Pacific gone deep blue, the residence fully itself.",
+          "ambientDescriptionFa": "فیلم با سالن در شب تمام می‌شود: بازتاب شعله‌ها روی شیشه، اقیانوس آبی عمیق و عمارت در اوج اقتدار.",
+          "sqft": 2450,
+          "exposure": "West / Night Scene",
+          "ceilingHeight": "16 Feet",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-finale-night",
+              "x": 52,
+              "y": 58,
+              "frameRange": [
+                2,
+                24
+              ],
+              "title": "Evening Scene Programming",
+              "category": "Technology",
+              "description": "One tap shifts the estate to its night scene: fires ignite, cove lighting warms, and the panorama glows against the dark.",
+              "spec": "Lutron HomeWorks scene engine",
+              "priceTag": "$85,000"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-finale-brass",
+              "name": "Aged Brass Accent Hardware",
+              "category": "Metals & Hardware",
+              "origin": "Florence, Italy",
+              "finish": "Living finish, unlacquered",
+              "description": "Unlacquered brass details catch the firelight and deepen gracefully with the coastal air.",
+              "swatchUrl": "video/posters/ch06.jpg",
+              "spec": "Solid C260 brass, hand-patinated",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        }
+      ],
+      "broker": {
+        "name": "Alexandra Whitmore",
+        "title": "Senior Global Estate Advisor",
+        "agency": "Whitmore & Partners Estates, Montecito",
+        "phone": "+1 (805) 555-0148",
+        "email": "a.whitmore@whitmoreestates.com",
+        "avatar": "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80"
+      }
+    }
+  ],
   "config": {
-    "scrubSmoothing": 2.2,
+    "scrubSmoothing": 1.6,
     "pinThreshold": 0.94,
     "accentTheme": "champagne",
     "enableWorkerPool": true,
     "enableReturnMatrix": true,
-    "defaultFullscreen": true,
-    "enableGlobalCheckpointGates": true,
+    "defaultFullscreen": false,
+    "enableGlobalCheckpointGates": false,
     "glassOpacity": 0.18,
     "enableSoundScape": true,
     "cacheBufferThreshold": 25,
     "liteSpeedSafe": true,
     "language": "en",
     "autoplaySpeed": 0.6,
-    "scrollSpeedFactor": 0.1,
+    "scrollSpeedFactor": 0.5,
     "cssPrefix": "vbt-t-",
     "glassBlur": 20
   },
-  "properties": [
-    {
-      "beds": 6,
-      "numericPrice": 68500000,
-      "sqft": 14200,
-      "subtitleFa": "Monaco • Boulevard de Suisse • Triplex Estate",
-      "baths": 8,
-      "yearBuilt": 2024,
-      "price": "€68,500,000",
-      "titleFa": "The Sky Villa at Port Hercule",
-      "architect": "Zaha Hadid & Foster Partners Design Studio",
-      "subtitle": "Monaco • Boulevard de Suisse • Triplex Estate",
-      "location": "Monte Carlo, Monaco",
-      "rooms": [
-        {
-          "id": "exterior-approach",
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "subtitle": "Sweeping drone approach across the Mediterranean coastline",
-          "sqft": 8500,
-          "shortNameFa": "01. Exterior",
-          "shortName": "01. Exterior",
-          "icon": "Compass",
-          "mediaUrl": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=85",
-          "pauseGateTitle": "Reached the Main Gateway: Choose Chamber to Enter",
-          "subtitleFa": "Sweeping drone approach across the Mediterranean coastline",
-          "mediaType": "mp4",
-          "ambientDescriptionFa": "Approaching the private promontory with panoramic views over the superyacht marina and Mediterranean coastline.",
-          "endProgress": 0.15,
-          "pauseGateTitleFa": "Reached the Main Gateway: Choose Chamber to Enter",
-          "totalFrames": 90,
-          "startProgress": 0,
-          "pauseCheckpointProgress": 0.95,
-          "ceilingHeight": "Open Air",
-          "enablePauseGate": false,
-          "name": "Exterior Approach & Heliport",
-          "exposure": "South / Mediterranean Panoramic",
-          "hotspots": [
-            {
-              "titleFa": "Triple-Glazed Curvilinear Glass Façade",
-              "spec": "Saint-Gobain Triple-Glazed Low-E",
-              "title": "Triple-Glazed Curvilinear Glass Façade",
-              "id": "hs-facade",
-              "y": 42,
-              "frameRange": [
-                10,
-                80
-              ],
-              "x": 48,
-              "category": "Architectural",
-              "description": "Custom acoustic and thermal glass curved panels imported from Saint-Gobain France with UV solar attenuation.",
-              "descriptionFa": "Custom acoustic and thermal glass curved panels imported from Saint-Gobain France with UV solar attenuation.",
-              "priceTag": "€1,850,000"
-            }
-          ],
-          "nameFa": "Exterior Approach & Heliport",
-          "materials": [
-            {
-              "descriptionFa": "Quarried from historic Roman quarries, providing timeless warm ivory texture with extreme weather resistance.",
-              "description": "Quarried from historic Roman quarries, providing timeless warm ivory texture with extreme weather resistance.",
-              "id": "mat-ext-stone",
-              "x": 28,
-              "ecoCert": "LEED v4 Platinum Verified",
-              "category": "Stone & Cladding",
-              "y": 55,
-              "origin": "Tivoli, Rome, Italy",
-              "nameFa": "Navona Travertine Facade Stone",
-              "name": "Navona Travertine Facade Stone",
-              "swatchUrl": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=300&q=80",
-              "finish": "Cross-Cut Honed & Sealed",
-              "spec": "30mm Slab, ASTM C1527 Rated"
-            },
-            {
-              "y": 38,
-              "category": "Metals & Frames",
-              "x": 72,
-              "origin": "Zurich, Switzerland",
-              "name": "Anodized Champagne Architectural Bronze",
-              "swatchUrl": "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?auto=format&fit=crop&w=300&q=80",
-              "description": "Marine-grade alloy resistant to salt-spray corrosion, retaining its soft gold luster under intense sunlight.",
-              "nameFa": "Anodized Champagne Architectural Bronze",
-              "descriptionFa": "Marine-grade alloy resistant to salt-spray corrosion, retaining its soft gold luster under intense sunlight.",
-              "id": "mat-ext-bronze",
-              "finish": "Micro-brushed 25-Micron Anodized",
-              "spec": "Qualicoat Class 3 Architectural Alloy"
-            }
-          ],
-          "ambientDescription": "Approaching the private promontory with panoramic views over the superyacht marina and Mediterranean coastline.",
-          "thumbnailUrl": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400&q=80"
-        },
-        {
-          "hotspots": [
-            {
-              "spec": "Oikos Synua Concealed Axis",
-              "category": "Technology",
-              "x": 52,
-              "y": 55,
-              "frameRange": [
-                15,
-                95
-              ],
-              "description": "Custom 4.2m bronze and smoked glass pivot gate by Oikos Venezia with sub-millimeter biometric recognition.",
-              "priceTag": "€145,000",
-              "id": "hs-door",
-              "title": "Motorized Biometric Pivot Door",
-              "titleFa": "Motorized Biometric Pivot Door",
-              "descriptionFa": "Custom 4.2m bronze and smoked glass pivot gate by Oikos Venezia with sub-millimeter biometric recognition."
-            }
-          ],
-          "exposure": "North-East Garden Axis",
-          "startProgress": 0.15,
-          "ceilingHeight": "4.20 meters",
-          "enablePauseGate": false,
-          "ambientDescriptionFa": "Entering through the monumental motorized pivot door into the private foyer with marble inlay reflecting morning sun.",
-          "shortName": "02. Grand Entrance",
-          "id": "grand-entrance",
-          "endProgress": 0.32,
-          "totalFrames": 110,
-          "name": "Grand Entrance & Pivot Portals",
-          "ambientDescription": "Entering through the monumental motorized pivot door into the private foyer with marble inlay reflecting morning sun.",
-          "thumbnailUrl": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80",
-          "mediaType": "mp4",
-          "mediaUrl": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85",
-          "pauseGateTitle": "Foyer Terminal: Choose Chamber to Proceed",
-          "subtitleFa": "Slowing into the biometric 4.2-meter bronze pivot portal",
-          "shortNameFa": "02. Grand Entrance",
-          "pauseCheckpointProgress": 0.85,
-          "subtitle": "Slowing into the biometric 4.2-meter bronze pivot portal",
-          "materials": [
-            {
-              "origin": "Markina, Basque Country, Spain",
-              "swatchUrl": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=300&q=80",
-              "y": 75,
-              "id": "mat-nero-marquina",
-              "spec": "Bookmatched 20mm Slabs",
-              "x": 35,
-              "description": "Deep obsidian black marble with striking pure white calcite lightning veins, perfectly bookmatched along the foyer.",
-              "descriptionFa": "Deep obsidian black marble with striking pure white calcite lightning veins, perfectly bookmatched along the foyer.",
-              "finish": "Mirror Polished Hydro-Repellent",
-              "name": "Nero Marquina Bookmatched Marble",
-              "category": "Stone & Marble",
-              "nameFa": "Nero Marquina Bookmatched Marble"
-            },
-            {
-              "swatchUrl": "https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=300&q=80",
-              "spec": "FSC 100% Certified Acoustic Core",
-              "id": "mat-smoked-oak",
-              "origin": "Black Forest, Germany",
-              "category": "Wood & Joinery",
-              "description": "Aged European oak treated with natural ammonia fuming to reveal deep espresso undertones without surface pigment.",
-              "name": "Smoked Bog Oak Architectural Paneling",
-              "x": 68,
-              "nameFa": "Smoked Bog Oak Architectural Paneling",
-              "y": 45,
-              "finish": "Ultra-Matte Natural Oil Finish",
-              "descriptionFa": "Aged European oak treated with natural ammonia fuming to reveal deep espresso undertones without surface pigment."
-            }
-          ],
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "sqft": 980,
-          "pauseGateTitleFa": "Reached the Main Gateway: Choose Chamber to Enter",
-          "icon": "Anchor",
-          "nameFa": "Grand Entrance & Pivot Portals"
-        },
-        {
-          "nameFa": "Grand Living Salon (Central Hub)",
-          "thumbnailUrl": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=400&q=80",
-          "ceilingHeight": "4.80 meters",
-          "startProgress": 0.32,
-          "subtitleFa": "Tour stops here in the central atrium — choose any chamber to explore",
-          "materials": [
-            {
-              "description": "The most prestigious marble in the world with luminous white crystalline base and soft honey-gold and warm gray veining.",
-              "y": 50,
-              "origin": "Carrara, Tuscany, Italy",
-              "x": 28,
-              "descriptionFa": "The most prestigious marble in the world with luminous white crystalline base and soft honey-gold and warm gray veining.",
-              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
-              "ecoCert": "Zero-VOC Eco Sealant",
-              "nameFa": "Calacatta Borghini Extra Gold Marble",
-              "spec": "Class A Extra Selection Slabs",
-              "id": "mat-calacatta-gold",
-              "finish": "Silk Satin Honed",
-              "category": "Stone & Marble",
-              "name": "Calacatta Borghini Extra Gold Marble"
-            },
-            {
-              "descriptionFa": "Triple-layer engineered French oak laid in a classic 45° chevron pattern with underfloor radiant hydronic heating.",
-              "description": "Triple-layer engineered French oak laid in a classic 45° chevron pattern with underfloor radiant hydronic heating.",
-              "nameFa": "French Oak Chevron Parquet Flooring",
-              "spec": "220mm Width x 18mm Thickness",
-              "category": "Flooring",
-              "id": "mat-chevron-oak",
-              "finish": "Natural Matte Waxed & Smoked",
-              "swatchUrl": "https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=300&q=80",
-              "y": 84,
-              "name": "French Oak Chevron Parquet Flooring",
-              "origin": "Fontainebleau Forest, France",
-              "x": 52
-            },
-            {
-              "description": "Woven from fine virgin wool and Mongolian cashmere, delivering supreme thermal comfort and acoustic dampening.",
-              "origin": "Quarona, Piedmont, Italy",
-              "descriptionFa": "Woven from fine virgin wool and Mongolian cashmere, delivering supreme thermal comfort and acoustic dampening.",
-              "name": "Loro Piana Cashmere-Wool Bouclé",
-              "finish": "Tactile Heavy Loop Weave",
-              "swatchUrl": "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=300&q=80",
-              "y": 68,
-              "nameFa": "Loro Piana Cashmere-Wool Bouclé",
-              "x": 75,
-              "id": "mat-boucle-fabric",
-              "category": "Fabrics & Upholstery",
-              "spec": "100,000 Martindale Rubs Abrasion"
-            }
-          ],
-          "exposure": "Full South / Port Hercule Marina",
-          "hotspots": [
-            {
-              "frameRange": [
-                10,
-                110
-              ],
-              "y": 60,
-              "id": "hs-fireplace",
-              "title": "Suspended Bioethanol Hearth by Focus",
-              "priceTag": "€48,000",
-              "x": 35,
-              "description": "Gyroscopic 360-degree rotating bioethanol hearth sculpted from matte graphite steel, designed by Dominique Imbert.",
-              "spec": "Focus Ergofocus 360 Custom Matte",
-              "titleFa": "Suspended Bioethanol Hearth by Focus",
-              "descriptionFa": "Gyroscopic 360-degree rotating bioethanol hearth sculpted from matte graphite steel, designed by Dominique Imbert.",
-              "category": "Design"
-            },
-            {
-              "y": 70,
-              "category": "Design",
-              "id": "hs-sofa",
-              "title": "Minotti Roger Modular Seating System",
-              "x": 65,
-              "descriptionFa": "Custom tailored in Bouclé Loro Piana cashmere-wool blend with saddle-leather accent shelves and bronzed bases.",
-              "titleFa": "Minotti Roger Modular Seating System",
-              "frameRange": [
-                20,
-                100
-              ],
-              "priceTag": "€112,000",
-              "spec": "Design by Rodolfo Dordoni for Minotti",
-              "description": "Custom tailored in Bouclé Loro Piana cashmere-wool blend with saddle-leather accent shelves and bronzed bases."
-            }
-          ],
-          "mediaUrl": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1920&q=85",
-          "isHub": true,
-          "name": "Grand Living Salon (Central Hub)",
-          "icon": "Tv",
-          "endProgress": 0.48,
-          "shortName": "03. Living Hub",
-          "id": "grand-salon",
-          "totalFrames": 120,
-          "shortNameFa": "03. Living Hub",
-          "sqft": 2850,
-          "ambientDescriptionFa": "The central hub of the residence, featuring 12-meter frameless sliding glass portals, Minotti custom lounge seating, and suspended sculptural hearth.",
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "mediaType": "mp4",
-          "subtitle": "Tour stops here in the central atrium — choose any chamber to explore",
-          "ambientDescription": "The central hub of the residence, featuring 12-meter frameless sliding glass portals, Minotti custom lounge seating, and suspended sculptural hearth."
-        },
-        {
-          "sqft": 1850,
-          "startProgress": 0.48,
-          "ceilingHeight": "3.60 meters",
-          "materials": [
-            {
-              "name": "De Gournay Hand-Embroidered Silk Wallpaper",
-              "id": "mat-silk-wall",
-              "origin": "Paris, France / Kyoto, Japan",
-              "nameFa": "De Gournay Hand-Embroidered Silk Wallpaper",
-              "swatchUrl": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=300&q=80",
-              "category": "Wallcoverings",
-              "spec": "100% Mulberry Raw Silk Backing",
-              "descriptionFa": "Custom botanical murals painted by master artists onto pure woven silk backings with metallic leaf accents.",
-              "description": "Custom botanical murals painted by master artists onto pure woven silk backings with metallic leaf accents.",
-              "x": 25,
-              "y": 38,
-              "finish": "Hand-Painted on Woven Slub Silk"
-            },
-            {
-              "id": "mat-rimadesio-glass",
-              "descriptionFa": "Precision sliding partitions and bespoke illuminated dressing wardrobe modules designed by Giuseppe Bavuso.",
-              "x": 78,
-              "nameFa": "Rimadesio Smoked Bronze Glass & Aluminum",
-              "description": "Precision sliding partitions and bespoke illuminated dressing wardrobe modules designed by Giuseppe Bavuso.",
-              "finish": "Reflective Bronze Tempered Fluted",
-              "name": "Rimadesio Smoked Bronze Glass & Aluminum",
-              "y": 48,
-              "swatchUrl": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=300&q=80",
-              "spec": "10mm Tempered Acoustic Glass",
-              "category": "Glass & Joinery",
-              "origin": "Giussano, Milan, Italy"
-            }
-          ],
-          "icon": "BedDouble",
-          "nameFa": "Master Royal Suite & Dressing",
-          "name": "Master Royal Suite & Dressing",
-          "thumbnailUrl": "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=400&q=80",
-          "subtitle": "Sanctuary with private sunset balcony and Rimadesio dressing",
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "endProgress": 0.65,
-          "mediaType": "mp4",
-          "subtitleFa": "Sanctuary with private sunset balcony and Rimadesio dressing",
-          "totalFrames": 115,
-          "shortNameFa": "04. Master Suite",
-          "hotspots": [
-            {
-              "category": "Design",
-              "titleFa": "Hästens Grand Vividus Bespoke Bed",
-              "description": "Handcrafted over 320 hours in Köping Sweden with certified horsetail hair, flax, pine, and pure cotton.",
-              "title": "Hästens Grand Vividus Bespoke Bed",
-              "id": "hs-bed",
-              "y": 65,
-              "spec": "Custom Ferron Bedframe by Ferris Rafauli",
-              "priceTag": "€390,000",
-              "frameRange": [
-                15,
-                100
-              ],
-              "x": 50,
-              "descriptionFa": "Handcrafted over 320 hours in Köping Sweden with certified horsetail hair, flax, pine, and pure cotton."
-            }
-          ],
-          "ambientDescription": "The primary wing occupies the entire south-west wing, framing panoramic sunset views over Cap Martin with silk-wrapped acoustic wall paneling.",
-          "exposure": "South-West Sunset",
-          "id": "master-suite",
-          "mediaUrl": "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1920&q=85",
-          "ambientDescriptionFa": "The primary wing occupies the entire south-west wing, framing panoramic sunset views over Cap Martin with silk-wrapped acoustic wall paneling.",
-          "shortName": "04. Master Suite"
-        },
-        {
-          "mediaUrl": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1920&q=85",
-          "startProgress": 0.65,
-          "name": "Minimalist Chef’s Boffi Kitchen",
-          "hotspots": [
-            {
-              "descriptionFa": "Monolithic 5.4-meter island designed by Piero Lissoni with seamless flush induction zones and solid brass details.",
-              "id": "hs-island",
-              "category": "Design",
-              "x": 52,
-              "frameRange": [
-                10,
-                90
-              ],
-              "priceTag": "€260,000",
-              "title": "Boffi Combine Cantilevered Island",
-              "description": "Monolithic 5.4-meter island designed by Piero Lissoni with seamless flush induction zones and solid brass details.",
-              "spec": "Boffi Combine R.H. Series",
-              "y": 58,
-              "titleFa": "Boffi Combine Cantilevered Island"
-            }
-          ],
-          "materials": [
-            {
-              "name": "Belgian Fossil Bluestone & Quartzite",
-              "finish": "Leathered Flamed Water-Repellent",
-              "swatchUrl": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=300&q=80",
-              "nameFa": "Belgian Fossil Bluestone & Quartzite",
-              "category": "Stone Countertops",
-              "id": "mat-black-granite",
-              "y": 64,
-              "spec": "Mohs Hardness 7.5",
-              "origin": "Soignies, Wallonia, Belgium",
-              "description": "Ultra-durable, acid-proof, and heat-resistant natural surface with subtle prehistoric crinoid fossil textures.",
-              "x": 36,
-              "descriptionFa": "Ultra-durable, acid-proof, and heat-resistant natural surface with subtle prehistoric crinoid fossil textures."
-            },
-            {
-              "finish": "Physical Vapor Deposition Satin Brass",
-              "descriptionFa": "Titanium-enhanced metal coating guaranteeing fingerprint resistance and lifetime anti-tarnish performance.",
-              "name": "PVD Brushed Warm Brass Cabinetry",
-              "nameFa": "PVD Brushed Warm Brass Cabinetry",
-              "category": "Metals & Hardware",
-              "swatchUrl": "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?auto=format&fit=crop&w=300&q=80",
-              "description": "Titanium-enhanced metal coating guaranteeing fingerprint resistance and lifetime anti-tarnish performance.",
-              "origin": "Florence, Italy",
-              "spec": "PVD Titanium Sputtered Layer",
-              "x": 68,
-              "y": 46,
-              "id": "mat-brushed-brass"
-            }
-          ],
-          "exposure": "East Morning Light",
-          "icon": "Utensils",
-          "ceilingHeight": "3.60 meters",
-          "thumbnailUrl": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=400&q=80",
-          "nameFa": "Minimalist Chef’s Boffi Kitchen",
-          "sqft": 820,
-          "subtitle": "Monolithic Calacatta island with hidden Gaggenau appliances",
-          "mediaType": "mp4",
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "shortNameFa": "05. Chef’s Kitchen",
-          "ambientDescription": "A 5.4-meter single monolithic marble island engineered by Boffi Italy, concealing touch-to-open motorized pantry bays and sommelier refrigeration.",
-          "ambientDescriptionFa": "A 5.4-meter single monolithic marble island engineered by Boffi Italy, concealing touch-to-open motorized pantry bays and sommelier refrigeration.",
-          "id": "chef-kitchen",
-          "subtitleFa": "Monolithic Calacatta island with hidden Gaggenau appliances",
-          "endProgress": 0.78,
-          "shortName": "05. Chef’s Kitchen",
-          "totalFrames": 110
-        },
-        {
-          "mediaType": "mp4",
-          "sqft": 450,
-          "mediaUrl": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1920&q=85",
-          "exposure": "Interior Climate Shielded",
-          "id": "wine-vault",
-          "hotspots": [
-            {
-              "y": 50,
-              "category": "Technology",
-              "description": "Independent hygrometric control maintaining 12°C and 70% relative humidity with active charcoal air filtration.",
-              "x": 46,
-              "frameRange": [
-                10,
-                85
-              ],
-              "descriptionFa": "Independent hygrometric control maintaining 12°C and 70% relative humidity with active charcoal air filtration.",
-              "priceTag": "€85,000",
-              "spec": "EuroCave Professional Dual-Inverter",
-              "id": "hs-wine-rack",
-              "titleFa": "Tri-Zone Climate Refrigeration Matrix",
-              "title": "Tri-Zone Climate Refrigeration Matrix"
-            }
-          ],
-          "name": "Sommelier Wine Vault & Tasting Salon",
-          "ceilingHeight": "3.20 meters",
-          "icon": "Wine",
-          "ambientDescriptionFa": "Hermetically sealed multi-zone vault lined with volcanic tuff stone and precision oak pegs, preserving grand crus under vibration-free conditions.",
-          "startProgress": 0.78,
-          "shortName": "06. Wine Vault",
-          "shortNameFa": "06. Wine Vault",
-          "thumbnailUrl": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&q=80",
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "subtitle": "1,800-bottle climate-calibrated glass display vault",
-          "nameFa": "Sommelier Wine Vault & Tasting Salon",
-          "materials": [
-            {
-              "origin": "Mount Etna, Sicily, Italy",
-              "description": "Thermal inertia stone naturally regulating humidity levels and absorbing environmental acoustic resonance.",
-              "name": "Etna Basaltic Lava Stone",
-              "descriptionFa": "Thermal inertia stone naturally regulating humidity levels and absorbing environmental acoustic resonance.",
-              "category": "Stone & Insulation",
-              "id": "mat-volcanic-stone",
-              "y": 55,
-              "finish": "Naturally Micro-Porous Brushed",
-              "swatchUrl": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=300&q=80",
-              "spec": "High Specific Heat Capacity",
-              "nameFa": "Etna Basaltic Lava Stone",
-              "x": 50
-            }
-          ],
-          "ambientDescription": "Hermetically sealed multi-zone vault lined with volcanic tuff stone and precision oak pegs, preserving grand crus under vibration-free conditions.",
-          "endProgress": 0.9,
-          "subtitleFa": "1,800-bottle climate-calibrated glass display vault",
-          "totalFrames": 95
-        },
-        {
-          "nameFa": "Panoramic Sunset Terrace & Infinity Pool",
-          "ambientDescription": "The crown of the residence: a 450m² teak deck cantilevered over the cliffs with infinity edge pool reflecting the Mediterranean sunset.",
-          "subtitleFa": "Glass-bottom cantilevered heated pool over Monaco harbor",
-          "mediaUrl": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=85",
-          "exposure": "360° Panoramic Unobstructed",
-          "hotspots": [
-            {
-              "descriptionFa": "14-meter heated saltwater infinity pool featuring an 80mm structural acrylic floor suspended 200 meters above sea level.",
-              "title": "Cantilevered Glass-Bottom Infinity Pool",
-              "frameRange": [
-                15,
-                110
-              ],
-              "priceTag": "€1,200,000",
-              "spec": "Reynolds Polymer Acrylic Subfloor",
-              "description": "14-meter heated saltwater infinity pool featuring an 80mm structural acrylic floor suspended 200 meters above sea level.",
-              "y": 65,
-              "titleFa": "Cantilevered Glass-Bottom Infinity Pool",
-              "x": 55,
-              "category": "Architectural",
-              "id": "hs-pool"
-            }
-          ],
-          "thumbnailUrl": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80",
-          "materials": [
-            {
-              "descriptionFa": "The premier yachting wood in the world, naturally rich in silica and natural rubber oils, ensuring zero splintering and grip under water.",
-              "spec": "140mm Sawn Teak Planks",
-              "finish": "Quarter-Sawn Marine Oil Finish",
-              "id": "mat-burmese-teak",
-              "nameFa": "Burmese Plantation Golden Teak Decking",
-              "name": "Burmese Plantation Golden Teak Decking",
-              "swatchUrl": "https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=300&q=80",
-              "origin": "Myanmar (Sustainably Certified)",
-              "x": 32,
-              "category": "Exterior Decking",
-              "y": 78,
-              "description": "The premier yachting wood in the world, naturally rich in silica and natural rubber oils, ensuring zero splintering and grip under water."
-            },
-            {
-              "x": 68,
-              "finish": "Hand-Cut Glass with 24kt Gold Foil",
-              "descriptionFa": "Artisanal micro-mosaics lining the pool basin, refracting underwater illumination into shimmering golden turquoise ripples.",
-              "spec": "Bisazza Le Gemme 20x20mm Collection",
-              "category": "Pool Linings",
-              "nameFa": "Bisazza 24k Gold & Platinum Glass Mosaics",
-              "y": 65,
-              "id": "mat-mosaic-glass",
-              "origin": "Vicenza, Italy",
-              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
-              "name": "Bisazza 24k Gold & Platinum Glass Mosaics",
-              "description": "Artisanal micro-mosaics lining the pool basin, refracting underwater illumination into shimmering golden turquoise ripples."
-            }
-          ],
-          "totalFrames": 120,
-          "name": "Panoramic Sunset Terrace & Infinity Pool",
-          "id": "sky-terrace",
-          "shortName": "07. Sky Terrace",
-          "endProgress": 1,
-          "icon": "Sun",
-          "mediaType": "mp4",
-          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/3f3bdb281329acc69db51f0195c90371440f6089/Camera%20Entering%20Room%20Showing%20Brand%20202608091805.mp4",
-          "ambientDescriptionFa": "The crown of the residence: a 450m² teak deck cantilevered over the cliffs with infinity edge pool reflecting the Mediterranean sunset.",
-          "subtitle": "Glass-bottom cantilevered heated pool over Monaco harbor",
-          "startProgress": 0.9,
-          "shortNameFa": "07. Sky Terrace",
-          "sqft": 4850,
-          "ceilingHeight": "Open Sky"
-        }
-      ],
-      "title": "The Sky Villa at Port Hercule",
-      "heroImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=85",
-      "broker": {
-        "phone": "+377 98 97 00 00",
-        "name": "Jean-Luc de Montefort",
-        "agency": "Sotheby’s International Realty Monte-Carlo",
-        "email": "j.montefort@sothebys-monaco.mc",
-        "title": "Managing Director, Private Client Group",
-        "avatar": "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80"
-      },
-      "currency": "EUR",
-      "tagline": "Ultra-Prime Trophy Residence",
-      "mlsNumber": "MC-8829-PRIME",
-      "id": "monaco-skyline-penthouse"
-    }
-  ],
-  "selectedPropertyId": "monaco-skyline-penthouse",
-  "updatedAt": "2026-09-30T06:40:36.656Z",
-  "activeRoomId": "wine-vault"
+  "selectedPropertyId": "royal-palm-estate",
+  "activeRoomId": "twilight-approach",
+  "updatedAt": "2026-10-02T07:58:05.873Z"
 }
