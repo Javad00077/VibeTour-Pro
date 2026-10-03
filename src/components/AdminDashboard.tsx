@@ -49,6 +49,7 @@ import {
 import { PropertyListing, Room, PluginConfig, AdminUser, Hotspot, MaterialItem, ActiveTab } from '../types';
 import { authService } from '../utils/authService';
 import { ensureAuth, auth } from '../firebase';
+import { isOwnerGoogleUser } from '../firebaseAuth';
 import { StorageService } from '../services/storageService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
@@ -487,10 +488,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleSaveAll = async () => {
     setIsSavingAll(true);
     try {
-      await StorageService.saveProperties(properties);
-      await StorageService.saveConfig(config);
+      const propSaved = await StorageService.saveProperties(properties);
+      const cfgSaved = await StorageService.saveConfig(config);
       await StorageService.saveActiveState(currentProperty.id, selectedRoomId);
-      showToast('All property tours, chambers & settings saved to Firebase Cloud Firestore and synchronized!');
+
+      // Only claim a successful Cloud (Firestore) sync when the owner is signed in.
+      // Otherwise the settings are saved to the current device (localStorage) and,
+      // if a local backend is running, to that server.
+      const isOwner = isOwnerGoogleUser();
+      if (isOwner) {
+        showToast('All settings saved to Firebase Cloud Firestore and synchronized across devices!');
+      } else if (propSaved || cfgSaved) {
+        showToast('Settings saved to this device. Use Google sign-in (Super Admin) to sync them globally.');
+      } else {
+        showToast('Settings saved to this device (no backend server detected — sign in with Google to sync globally).');
+      }
     } catch {
       showToast('Could not complete storage save.');
     } finally {

@@ -50,3 +50,11 @@ export async function signOutGoogle(): Promise<void> {
 export function onGoogleAuthChange(cb: (user: User | null) => void): () => void {
   return onAuthStateChanged(auth, cb);
 }
+
+// Whether the currently signed-in Firebase user is the owner Google account
+// (the only account allowed to write global tour settings to Firestore).
+export function isOwnerGoogleUser(){
+  const u = auth.currentUser;
+  if (!u || !u.email) return false;
+  return (u.email || '').toLowerCase() === ADMIN_EMAILS[0].toLowerCase();
+}

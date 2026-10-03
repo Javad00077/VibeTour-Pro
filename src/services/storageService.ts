@@ -4,7 +4,8 @@ import {
   getCloudTourData,
   saveCloudTourData,
   subscribeToCloudTourData,
-  CloudTourData
+  CloudTourData,
+  isOwnerGoogleUser
 } from '../firebase';
 
 // Bumped to v8 — per-chapter video restart behavior + local GitHub URL mapping
@@ -318,6 +319,7 @@ export class StorageService {
   }
 
   // Save all properties to LocalStorage, IndexedDB, Firebase Firestore, and Backend API
+
   public static async saveProperties(properties: PropertyListing[]): Promise<boolean> {
     let lsSuccess = false;
     try {
@@ -332,29 +334,37 @@ export class StorageService {
     // Always persist to IndexedDB
     const idbSuccess = await idbSet('properties', properties);
 
-    // Save to Firebase Firestore Cloud Database for all global devices
-    const currentCfg = StorageService.getInitialConfig();
-    const currentPropId = StorageService.getInitialSelectedPropertyId() || properties[0]?.id;
-    const currentRoomId = StorageService.getInitialActiveRoomId() || properties[0]?.rooms[0]?.id;
-    saveCloudTourData(properties, currentCfg, currentPropId, currentRoomId).catch((err) => {
-      console.warn('[Firebase Firestore] Cloud save notice:', err);
-    });
-
-    // Save to Backend API if server is alive
+    // Persist to a local backend server if one is running. This is the true
+    // "global like a normal website" store for GitHub Pages static hosting.
     try {
-      await fetch('/api/properties', {
+      const res = await fetch('/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ properties }),
       });
-    } catch {
-      // Offline or static GitHub Pages hosting
+      if (res.status >= 200 && res.status < 300) {
+        lsSuccess = true;
+      }
+    } catch (e) {
+      // Not running (static host) -- rely on localStorage/IndexedDB/Firestore.
     }
 
+    // Cloud Firestore -- secure, owner-only global write.
+    // Only attempt when the owner is signed in as their Google account.
+    if (isOwnerGoogleUser()) {
+      const currentCfg = StorageService.getInitialConfig();
+      const currentPropId = StorageService.getInitialSelectedPropertyId() || properties[0]?.id;
+      const currentRoomId = StorageService.getInitialActiveRoomId() || properties[0]?.rooms[0]?.id;
+      saveCloudTourData(properties, currentCfg, currentPropId, currentRoomId).catch((err) => {
+        console.warn('[Firebase Firestore] Cloud save notice:', err);
+      });
+      return lsSuccess || idbSuccess;
+    }
+
+    // Not signed in as owner: never write to Firestore, never claim it succeeded.
     return lsSuccess || idbSuccess;
   }
 
-  // Save configuration
   public static async saveConfig(config: PluginConfig): Promise<boolean> {
     const cleanConfig: PluginConfig = sanitizeConfig(config);
 
@@ -370,25 +380,33 @@ export class StorageService {
 
     await idbSet('config', cleanConfig);
 
-    // Save to Firebase Cloud Firestore
-    const currentProps = StorageService.getInitialProperties();
-    const currentPropId = StorageService.getInitialSelectedPropertyId();
-    const currentRoomId = StorageService.getInitialActiveRoomId();
-    saveCloudTourData(currentProps, cleanConfig, currentPropId || undefined, currentRoomId || undefined).catch((err) => {
-      console.warn('[Firebase Firestore] Cloud config save notice:', err);
-    });
-
+    // Persist to a local backend server if one is running.
     try {
-      await fetch('/api/config', {
+      const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanConfig),
       });
-    } catch {}
+      if (res.status >= 200 && res.status < 300) {
+        lsSuccess = true;
+      }
+    } catch {
+      // Not running (static host) -- rely on localStorage/IndexedDB/Firestore.
+    }
 
-    return lsSuccess;
+    // Cloud Firestore -- secure, owner-only global write.
+    if (isOwnerGoogleUser()) {
+      const currentProps = StorageService.getInitialProperties();
+      const currentPropId = StorageService.getInitialSelectedPropertyId();
+      const currentRoomId = StorageService.getInitialActiveRoomId();
+      saveCloudTourData(currentProps, cleanConfig, currentPropId || undefined, currentRoomId || undefined).catch((err) => {
+        console.warn('[Firebase Firestore] Cloud config save notice:', err);
+      });
+    }
+    // If the owner is not signed in, the privileged write is skipped entirely.
+
+    return lsSuccess || (await idbGet<PluginConfig>('config') !== null);
   }
-
   // Save selected property ID & active room
   public static async saveActiveState(propertyId: string, roomId?: string): Promise<void> {
     try {

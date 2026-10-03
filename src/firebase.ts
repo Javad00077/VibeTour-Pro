@@ -9,6 +9,8 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously, Auth } from 'firebase/auth';
+import { isOwnerGoogleUser, ADMIN_EMAILS } from './firebaseAuth';
+export { isOwnerGoogleUser };
 import { PropertyListing, PluginConfig } from './types';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -86,6 +88,18 @@ let pendingData: {
   resolve: (value: boolean) => void;
 } | null = null;
 
+/**
+ * Cloud write that respects the current authenticated identity.
+ *
+ * Firebase rules require `request.auth.token.email == 'kazeme.javad@gmail.com'`
+ * (owner Google account) for writes. Anonymous users are read-only.
+ * This write:
+ *  - If the owner is currently signed in with Google (auth.currentUser.email ==
+ *    the owner allow-listed address), writes as that user → global, server-authorised
+ *    persistence on Firestore.
+ *  - Otherwise the write is rejected by the rules and this returns false
+ *    (no silent success, no stale misreporting).
+ */
 async function executeCloudWrite(
   properties: PropertyListing[],
   config?: PluginConfig,
@@ -93,6 +107,16 @@ async function executeCloudWrite(
   activeRoomId?: string
 ): Promise<boolean> {
   try {
+    if (!isOwnerGoogleUser()) {
+      // Not signed in as the owner. We deliberately do NOT claim a successful
+      // cloud save — this keeps anonymous save attempts from overwriting
+      // settings on remote devices or creating invalid ownership claims.
+      console.warn(
+        '[Firebase Firestore] Cloud write rejected (not signed in as owner ' +
+        'kazeme.javad@gmail.com) - saving only to local storage/backend.'
+      );
+      return false;
+    }
     await ensureAuth();
     const docRef = doc(db, 'tour_data', MASTER_DOC_PATH);
     const payload: CloudTourData = {
