@@ -21,6 +21,9 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: https://javad00077.github.io/VibeTour-Pro
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
