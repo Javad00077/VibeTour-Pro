@@ -40,8 +40,6 @@ jobs:
         run: npm run build
 
       - name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # اگر از خروجی آدرس صفحات استفاده می‌کنید
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
