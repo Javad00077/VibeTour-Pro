@@ -1,0 +1,26 @@
+name: Extract Existing Zip
+on:
+  workflow_dispatch: # این خط به شما اجازه می‌دهد اکشن را دستی اجرا کنید
+
+jobs:
+  unzip-process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Unzip File
+        run: |
+          # به جای archive.zip نام دقیق فایل زیپ خود را بنویسید (با رعایت حروف کوچک و بزرگ)
+          unzip videos_folder.zip -d .
+          
+          # حذف فایل زیپ اصلی برای خلوت شدن ریپازیتوری
+          rm archive.zip
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+          git add .
+          git commit -m "Unzipped archive.zip via GitHub Actions" || exit 0
+          git push
