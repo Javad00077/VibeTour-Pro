@@ -111,7 +111,7 @@ export interface AdminUser {
   email?: string;
   displayName: string;
   role: 'Super Admin' | 'Architect & Media Director';
-  authProvider: 'credentials' | 'google';
+  authProvider: 'credentials' | 'google' | 'owner-key';
   avatar?: string;
   lastLogin: string;
 }

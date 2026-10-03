@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { PropertyListing, Room, PluginConfig, AdminUser, Hotspot, MaterialItem, ActiveTab } from '../types';
 import { authService } from '../utils/authService';
+import { ensureAuth, auth } from '../firebase';
 import { StorageService } from '../services/storageService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
@@ -86,10 +87,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
-  // Login Form States — Google is the only login path ('gmail')
-  const [loginMode] = useState<'gmail'>('gmail');
+  // Login Form States — dual path: Owner Key (offline) + Google (cloud)
+  const [loginMode, setLoginMode] = useState<'owner' | 'google'>('owner');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginErrorEn, setLoginErrorEn] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  // Owner Key account (registration / sign-in / recovery) — device-local, no network
+  const [hasOwnerAccount, setHasOwnerAccount] = useState<boolean>(() => authService.hasOwnerAccount());
+  const [ownerEmail, setOwnerEmail] = useState<string>('kazeme.javad@gmail.com');
+  const [ownerPassword, setOwnerPassword] = useState<string>('');
+  const [ownerConfirm, setOwnerConfirm] = useState<string>('');
+  const [ownerRecoveryInput, setOwnerRecoveryInput] = useState<string>('');
+  const [ownerResetMode, setOwnerResetMode] = useState<boolean>(false);
+  const [freshRecoveryKey, setFreshRecoveryKey] = useState<string | null>(null);
+  const [recoveryAck, setRecoveryAck] = useState<boolean>(false);
+  // Security tab — change password
+  const [secCurrent, setSecCurrent] = useState<string>('');
+  const [secNew, setSecNew] = useState<string>('');
+  const [secConfirm, setSecConfirm] = useState<string>('');
+  // Real cloud connectivity (Firebase reachability)
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   // Dashboard Active Tab
   const [adminTab, setAdminTab] = useState<AdminTab>('profiles');
@@ -164,7 +181,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (onAuthChange) onAuthChange(true);
       showToast(`Signed in as ${res.user.email}`);
     } else {
-      setLoginError(res.error || 'Google sign-in failed.');
+      setLoginError(res.errorFa || res.error || 'Google sign-in failed.');
+      setLoginErrorEn(res.error || null);
       soundEngine.triggerHapticChime(320);
     }
     setIsLoggingIn(false);
@@ -177,6 +195,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setCurrentUser(null);
     if (onAuthChange) onAuthChange(false);
     showToast('Signed out successfully.');
+  };
+
+  // Real Firebase reachability probe for the header cloud pill
+  useEffect(() => {
+    let cancelled = false;
+    ensureAuth().finally(() => {
+      setTimeout(() => {
+        if (!cancelled) setCloudStatus(auth.currentUser ? 'online' : 'offline');
+      }, 1000);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const setAuthError = (fa: string | undefined, en: string | undefined) => {
+    setLoginError(fa || en || 'خطای نامشخص.');
+    setLoginErrorEn(en || null);
+  };
+
+  // ── Owner Key account: register / login / reset (100% offline, no Google) ──
+  const handleOwnerRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginErrorEn(null);
+    if (ownerPassword !== ownerConfirm) {
+      setAuthError('رمز عبور با تکرار آن مطابقت ندارد.', 'Password and confirmation do not match.');
+      soundEngine.triggerHapticChime(320);
+      return;
+    }
+    setIsLoggingIn(true);
+    const res = await authService.registerOwner(ownerEmail, ownerPassword);
+    setIsLoggingIn(false);
+    if (res.success && res.recoveryKey) {
+      setHasOwnerAccount(true);
+      setFreshRecoveryKey(res.recoveryKey);
+      setRecoveryAck(false);
+      setOwnerPassword('');
+      setOwnerConfirm('');
+      soundEngine.triggerHapticChime(660);
+    } else {
+      setAuthError(res.errorFa, res.error);
+      soundEngine.triggerHapticChime(320);
+    }
+  };
+
+  const handleOwnerLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginErrorEn(null);
+    setIsLoggingIn(true);
+    const res = await authService.loginWithOwner(ownerEmail, ownerPassword);
+    setIsLoggingIn(false);
+    if (res.success && res.user) {
+      setIsAuthenticated(true);
+      setCurrentUser(res.user);
+      if (onAuthChange) onAuthChange(true);
+      showToast(`خوش آمدید — ${res.user.email}`);
+    } else {
+      setAuthError(res.errorFa, res.error);
+      soundEngine.triggerHapticChime(320);
+    }
+  };
+
+  const handleOwnerReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginErrorEn(null);
+    if (ownerPassword !== ownerConfirm) {
+      setAuthError('رمز عبور با تکرار آن مطابقت ندارد.', 'Password and confirmation do not match.');
+      return;
+    }
+    setIsLoggingIn(true);
+    const res = await authService.resetOwnerPasswordWithRecoveryKey(ownerRecoveryInput, ownerPassword);
+    setIsLoggingIn(false);
+    if (res.success) {
+      setOwnerResetMode(false);
+      setOwnerRecoveryInput('');
+      setOwnerPassword('');
+      setOwnerConfirm('');
+      showToast('رمز با موفقیت بازنشانی شد — حالا وارد شوید.');
+    } else {
+      setAuthError(res.errorFa, res.error);
+      soundEngine.triggerHapticChime(320);
+    }
+  };
+
+  const handleCopyRecoveryKey = async () => {
+    if (!freshRecoveryKey) return;
+    try {
+      await navigator.clipboard.writeText(freshRecoveryKey);
+      showToast('کد بازیابی کپی شد.');
+    } catch {
+      showToast('کپی ناموفق بود — کد را دستی یادداشت کنید.');
+    }
+  };
+
+  // Security tab — change owner password
+  const handleChangeOwnerPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (secNew !== secConfirm) {
+      showToast('رمز جدید با تکرار آن مطابقت ندارد.');
+      soundEngine.triggerHapticChime(320);
+      return;
+    }
+    const res = await authService.changeOwnerPassword(secCurrent, secNew);
+    if (res.success) {
+      showToast('رمز مدیر با موفقیت تغییر کرد.');
+      setSecCurrent('');
+      setSecNew('');
+      setSecConfirm('');
+    } else {
+      showToast(res.errorFa || res.error || 'تغییر رمز ناموفق بود.');
+      soundEngine.triggerHapticChime(320);
+    }
   };
 
   // (Credentials reset removed — admin identity is solely the allow-listed Google account)
@@ -387,36 +518,161 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-wide">
               Administrator Sign In
             </h2>
-            <p className="text-xs text-slate-300 font-light max-w-md mx-auto leading-relaxed">
-              Sign in with your verified Google account to configure facades, tour videos, checkpoint gates, and kinetic motion physics. Only the owner's allow-listed Gmail can ever obtain admin access.
+            <p className="text-xs text-slate-300 font-light max-w-md mx-auto leading-relaxed" dir="rtl">
+              دو مسیر ورود: «کلید مدیر» کاملاً محلی است و بدون اینترنت/گوگل کار می‌کند؛ حساب گوگل فقط برای ذخیره ابری لازم است.
             </p>
           </div>
 
-          {/* Login Mode Header (Google is the only secure path) */}
-          <div className="p-1 bg-[#12141f] rounded-2xl border border-white/10 text-xs font-semibold">
+          {/* Login Mode Switcher */}
+          <div className="grid grid-cols-2 gap-1 p-1 bg-[#12141f] rounded-2xl border border-white/10 text-xs font-semibold">
             <button
-              onClick={() => {
-                if (!isLoggingIn) handleGoogleLogin();
-                setLoginError(null);
-              }}
-              className="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black shadow-lg font-bold disabled:opacity-60"
-              disabled={isLoggingIn}
+              type="button"
+              onClick={() => { setLoginMode('owner'); setLoginError(null); setLoginErrorEn(null); }}
+              className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${loginMode === 'owner' ? 'bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black shadow-lg font-bold' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Key className="w-4 h-4" />
+              <span>کلید مدیر / Owner Key</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMode('google'); setLoginError(null); setLoginErrorEn(null); }}
+              className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${loginMode === 'google' ? 'bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black shadow-lg font-bold' : 'text-slate-400 hover:text-white'}`}
             >
               <Mail className="w-4 h-4" />
-              <span>{isLoggingIn ? 'Opening Google Sign-In…' : 'Sign in with Google'}</span>
+              <span>گوگل / Google</span>
             </button>
           </div>
 
-          {/* Error Message */}
+          {/* Error Message (FA + EN) */}
           {loginError && (
-            <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2.5 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>{loginError}</span>
+            <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-2.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="block leading-relaxed" dir="rtl">{loginError}</span>
+                {loginErrorEn && <span className="block text-[10px] text-rose-300/70 font-mono" dir="ltr">{loginErrorEn}</span>}
+              </div>
             </div>
           )}
 
-          {/* TAB 1: GOOGLE AUTHENTICATION — the only login path */}
-          {loginMode === 'gmail' && (
+          {loginMode === 'owner' && (
+            <div className="space-y-4 animate-in fade-in">
+              {freshRecoveryKey ? (
+                /* One-time recovery key reveal */
+                <div className="p-4 rounded-2xl bg-[#141624] border border-emerald-500/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Unlock className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-white" dir="rtl">کد بازیابی اضطراری (فقط همین یک بار نمایش داده می‌شود)</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-black/40 border border-emerald-500/20 flex items-center justify-between gap-2">
+                    <span className="font-mono text-sm text-emerald-300 tracking-wider" dir="ltr">{freshRecoveryKey}</span>
+                    <button type="button" onClick={handleCopyRecoveryKey} className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold flex items-center gap-1 transition-colors">
+                      <Copy className="w-3 h-3" />
+                      <span>Copy</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed" dir="rtl">
+                    این کد را در جای امن ذخیره کنید — تنها راه بازنشانی رمز در صورت فراموشی است.
+                  </p>
+                  <label className="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+                    <input type="checkbox" checked={recoveryAck} onChange={(e) => setRecoveryAck(e.target.checked)} className="accent-[#c5a880]" />
+                    <span dir="rtl">کد را در جای امن ذخیره کردم</span>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!recoveryAck}
+                    onClick={() => setFreshRecoveryKey(null)}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    <span dir="rtl">ذخیره کردم — رفتن به صفحه ورود</span>
+                  </button>
+                </div>
+              ) : !hasOwnerAccount ? (
+                /* Registration */
+                <form onSubmit={handleOwnerRegister} className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/30 space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+                    <User className="w-4 h-4 text-[#c5a880]" />
+                    <span className="text-xs font-bold text-white" dir="rtl">ساخت حساب مدیر (ثبت‌نام یک‌باره)</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-slate-300 block" dir="rtl">ایمیل مالک:</label>
+                    <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">رمز عبور (حداقل ۸ کاراکتر):</label>
+                      <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز عبور:</label>
+                      <input type="password" value={ownerConfirm} onChange={(e) => setOwnerConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={isLoggingIn} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20">
+                    <Key className="w-4 h-4" />
+                    <span dir="rtl">ساخت حساب مدیر</span>
+                  </button>
+                  <p className="text-[10px] text-slate-500 text-center" dir="rtl">ثبت‌نام فقط با جیمیل مالک (kazeme.javad@gmail.com) پذیرفته می‌شود.</p>
+                </form>
+              ) : ownerResetMode ? (
+                /* Recovery reset */
+                <form onSubmit={handleOwnerReset} className="p-4 rounded-2xl bg-[#141624] border border-amber-500/30 space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+                    <RotateCcw className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-white" dir="rtl">بازنشانی رمز با کد بازیابی</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-slate-300 block" dir="rtl">کد بازیابی (VBT-…):</label>
+                    <input type="text" value={ownerRecoveryInput} onChange={(e) => setOwnerRecoveryInput(e.target.value)} required dir="ltr" placeholder="VBT-XXXX-XXXX-XXXX-XXXX" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-amber-400 font-mono tracking-wider" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">رمز جدید:</label>
+                      <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز جدید:</label>
+                      <input type="password" value={ownerConfirm} onChange={(e) => setOwnerConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={isLoggingIn} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs disabled:opacity-60 transition-all">
+                    <span dir="rtl">بازنشانی رمز عبور</span>
+                  </button>
+                  <button type="button" onClick={() => { setOwnerResetMode(false); setLoginError(null); setLoginErrorEn(null); }} className="w-full text-[11px] text-slate-400 hover:text-white transition-colors" dir="rtl">
+                    بازگشت به ورود
+                  </button>
+                </form>
+              ) : (
+                /* Sign in */
+                <form onSubmit={handleOwnerLogin} className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/30 space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+                    <Lock className="w-4 h-4 text-[#c5a880]" />
+                    <span className="text-xs font-bold text-white" dir="rtl">ورود با کلید مدیر</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-slate-300 block" dir="rtl">ایمیل:</label>
+                    <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-slate-300 block" dir="rtl">رمز عبور:</label>
+                    <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                  </div>
+                  <button type="submit" disabled={isLoggingIn} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20">
+                    <Unlock className="w-4 h-4" />
+                    <span dir="rtl">{isLoggingIn ? 'در حال ورود…' : 'ورود به داشبرد مدیریت'}</span>
+                  </button>
+                  <button type="button" onClick={() => { setOwnerResetMode(true); setLoginError(null); setLoginErrorEn(null); }} className="w-full text-[11px] text-slate-400 hover:text-[#c5a880] transition-colors" dir="rtl">
+                    رمز را فراموش کرده‌ام — بازنشانی با کد بازیابی
+                  </button>
+                </form>
+              )}
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-slate-400 flex items-start gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#c5a880] shrink-0 mt-0.5" />
+                <span dir="rtl">این مسیر کاملاً روی دستگاه شما ذخیره می‌شود و بدون اینترنت هم کار می‌کند. بازدیدکنندگان نمی‌توانند حساب بسازند — ثبت‌نام فقط با جیمیل مالک پذیرفته می‌شود.</span>
+              </div>
+            </div>
+          )}
+
+          {loginMode === 'google' && (
             <div className="space-y-4 animate-in fade-in">
               {/* Primary Recognized Google Card */}
               <div className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/30 hover:border-[#c5a880] transition-all space-y-3 shadow-lg">
@@ -474,9 +730,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-slate-400 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#c5a880] shrink-0" />
-                <span>Only the owner account above can access the Admin Panel. Visitors can always view the tour but never edit it.</span>
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200 flex items-start gap-2">
+                <Globe className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span dir="rtl">گوگل فقط برای «ذخیره ابری» لازم است. در ایران سرورهای گوگل مسدودند — بدون VPN خطای network-request-failed می‌دهد. برای ورود روزمره از تب «کلید مدیر» استفاده کنید.</span>
               </div>
             </div>
           )}
@@ -538,7 +794,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </span>
               <span>•</span>
               <span className="text-[11px] text-slate-400">
-                Sign In Method: {currentUser?.authProvider === 'google' ? 'Verified Google Account' : 'Username / Password'}
+                Sign In Method: {currentUser?.authProvider === 'google' ? 'Google (Cloud Save)' : currentUser?.authProvider === 'owner-key' ? 'Owner Key (Local)' : 'Password'}
               </span>
             </div>
           </div>
@@ -546,10 +802,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Top Header Actions */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-          {/* Cloud Firestore Sync Status Pill */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-mono text-[11px]">Firebase Cloud Live</span>
+          {/* Cloud Firestore Sync Status Pill (real connectivity) */}
+          <div
+            title={cloudStatus === 'online' ? 'اتصال ابری فعال است' : 'اتصال به فایربیس برقرار نشد — ذخیره فقط محلی می‌شود. برای ذخیره ابری VPN لازم است.'}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs ${cloudStatus === 'online' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : cloudStatus === 'offline' ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' : 'bg-white/5 border-white/10 text-slate-400'}`}
+          >
+            <span className={`w-2 h-2 rounded-full ${cloudStatus === 'online' ? 'bg-emerald-400 animate-pulse' : cloudStatus === 'offline' ? 'bg-rose-400' : 'bg-slate-400 animate-pulse'}`} />
+            <span className="font-mono text-[11px]">{cloudStatus === 'online' ? 'Cloud: Online' : cloudStatus === 'offline' ? 'Cloud: Offline' : 'Cloud: …'}</span>
           </div>
 
           {/* Explicit Save & Sync Button */}
@@ -2086,20 +2345,63 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#141624] border border-emerald-500/25 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-bold text-white">Google-Only Admin Identity</span>
+            <div className="p-5 rounded-2xl bg-[#141624] border border-[#c5a880]/25 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-[#c5a880]" />
+                  <span className="text-xs font-bold text-white" dir="rtl">حساب مدیر (Owner Account)</span>
+                </div>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${hasOwnerAccount ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'}`}>
+                  {hasOwnerAccount ? 'Registered on this device' : 'Not registered'}
+                </span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                There are no usernames or passwords anymore. The single admin of this application is
-                the verified Google account <span className="font-mono text-[#c5a880]">kazeme.javad@gmail.com</span>.
-                Every other Google account — and every anonymous visitor — is rejected by Firebase
-                Authentication and by the server-side Firestore security rules.
+              <p className="text-[11px] text-slate-400 leading-relaxed" dir="rtl">
+                ثبت‌نام و ورود مدیر کاملاً محلی است (PBKDF2 هش‌شده روی همین دستگاه) و به گوگل وابسته نیست — بدون VPN هم کار می‌کند. ذخیره ابری همچنان فقط با حساب گوگل مالک و طبق قوانین سروری Firestore ممکن است.
               </p>
-              <p className="text-[10px] text-slate-400 font-mono">
-                firestore.rules → allow write: owner email only · allow read: public (tour data)
-              </p>
+              {hasOwnerAccount ? (
+                <form onSubmit={handleChangeOwnerPassword} className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">رمز فعلی:</label>
+                      <input type="password" value={secCurrent} onChange={(e) => setSecCurrent(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">رمز جدید (≥ ۸ کاراکتر):</label>
+                      <input type="password" value={secNew} onChange={(e) => setSecNew(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز جدید:</label>
+                      <input type="password" value={secConfirm} onChange={(e) => setSecConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                  </div>
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center gap-2 transition-all shadow-md shadow-[#c5a880]/20">
+                    <Key className="w-3.5 h-3.5" />
+                    <span dir="rtl">تغییر رمز مدیر</span>
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleOwnerRegister} className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">ایمیل مالک:</label>
+                      <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">رمز عبور (≥ ۸ کاراکتر):</label>
+                      <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز:</label>
+                      <input type="password" value={ownerConfirm} onChange={(e) => setOwnerConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                    </div>
+                  </div>
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center gap-2 transition-all shadow-md shadow-[#c5a880]/20">
+                    <Key className="w-3.5 h-3.5" />
+                    <span dir="rtl">ساخت حساب مدیر</span>
+                  </button>
+                  <p className="text-[10px] text-amber-300/80" dir="rtl">پس از ثبت‌نام، یک کد بازیابی نمایش داده می‌شود — آن را ذخیره کنید.</p>
+                </form>
+              )}
             </div>
           </div>
 
