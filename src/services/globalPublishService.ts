@@ -99,16 +99,23 @@ export async function putRepoFile(path: string, content: string, message: string
     // first publish (file does not exist yet) or transient network issue
   }
 
-  const res = await fetch(base, {
-    method: 'PUT',
-    headers: { ...githubHeaders(token), 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message,
-      content: toBase64Utf8(content),
-      branch,
-      ...(sha ? { sha } : {})
-    })
-  });
+  let res: Response;
+  try {
+    res = await fetch(base, {
+      method: 'PUT',
+      headers: { ...githubHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        content: toBase64Utf8(content),
+        branch,
+        ...(sha ? { sha } : {})
+      })
+    });
+  } catch {
+    // GitHub is unreachable (offline, blocked, or DNS/CORS failure). Report it
+    // in Persian instead of leaking the raw "Failed to fetch" message.
+    throw new Error('ارتباط با api.github.com برقرار نشد (اینترنت، فیلتر یا DNS)');
+  }
 
   if (!res.ok) {
     let detail: any = null;
@@ -152,46 +159,54 @@ export async function publishGlobalTourData(payload: {
 
   const stamp = new Date().toISOString();
 
-  // 1) The tour package every visitor loads
-  const tourJson = JSON.stringify(
-    {
-      properties: payload.properties,
-      config: payload.config || {},
-      updatedAt: stamp
-    },
-    null,
-    2
-  );
+  // Never let an unexpected failure abort the caller's save flow: publishing is
+  // a best-effort side effect on top of the local save that already succeeded.
   try {
-    await putRepoFile(PUBLISH_TARGET.tourDataPath, tourJson, 'Publish tour settings globally (VibeTour dashboard)', token);
-    result.published.push(PUBLISH_TARGET.tourDataPath);
-  } catch (err: any) {
-    result.failed.push({ path: PUBLISH_TARGET.tourDataPath, reason: err?.message || 'خطای نامشخص' });
-  }
-
-  // 2) The owner credential — PBKDF2 hashes only. Enables one managed admin
-  //    account on every device via the new-device sign-in.
-  if (payload.credential && payload.credential.email) {
-    const cred = payload.credential;
-    const credJson = JSON.stringify(
+    // 1) The tour package every visitor loads
+    const tourJson = JSON.stringify(
       {
-        email: cred.email,
-        salt: cred.salt,
-        passwordHash: cred.passwordHash,
-        recoveryHash: cred.recoveryHash,
-        createdAt: cred.createdAt,
-        hashVersion: cred.hashVersion,
+        properties: payload.properties,
+        config: payload.config || {},
         updatedAt: stamp
       },
       null,
       2
     );
     try {
-      await putRepoFile(PUBLISH_TARGET.credentialPath, credJson, 'Publish admin credential for cross-device sign-in (hashes only)', token);
-      result.published.push(PUBLISH_TARGET.credentialPath);
+      await putRepoFile(PUBLISH_TARGET.tourDataPath, tourJson, 'Publish tour settings globally (VibeTour dashboard)', token);
+      result.published.push(PUBLISH_TARGET.tourDataPath);
     } catch (err: any) {
-      result.failed.push({ path: PUBLISH_TARGET.credentialPath, reason: err?.message || 'خطای نامشخص' });
+      result.failed.push({ path: PUBLISH_TARGET.tourDataPath, reason: err?.message || 'خطای نامشخص' });
     }
+
+    // 2) The owner credential — PBKDF2 hashes only. Enables one managed admin
+    //    account on every device via the new-device sign-in.
+    if (payload.credential && payload.credential.email) {
+      const cred = payload.credential;
+      const credJson = JSON.stringify(
+        {
+          email: cred.email,
+          salt: cred.salt,
+          passwordHash: cred.passwordHash,
+          recoveryHash: cred.recoveryHash,
+          createdAt: cred.createdAt,
+          hashVersion: cred.hashVersion,
+          updatedAt: stamp
+        },
+        null,
+        2
+      );
+      try {
+        await putRepoFile(PUBLISH_TARGET.credentialPath, credJson, 'Publish admin credential for cross-device sign-in (hashes only)', token);
+        result.published.push(PUBLISH_TARGET.credentialPath);
+      } catch (err: any) {
+        result.failed.push({ path: PUBLISH_TARGET.credentialPath, reason: err?.message || 'خطای نامشخص' });
+      }
+    }
+  } catch (err: any) {
+    // Unexpected error (serialization, quota, ...) — report it as a failed publish
+    // instead of throwing into the save flow.
+    result.failed.push({ path: PUBLISH_TARGET.tourDataPath, reason: err?.message || 'خطای نامشخص' });
   }
 
   result.ok = result.failed.length === 0 && result.published.length > 0;

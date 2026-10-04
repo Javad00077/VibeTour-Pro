@@ -2609,6 +2609,11 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
                   onChange={(e) => {
                     setGhPat(e.target.value);
                     setStoredPat(e.target.value);
+                    // Flip the status pill as soon as a token is present so the
+                    // owner sees "Sync: GitHub" without having to save first.
+                    if (isOwnerGoogleUser()) setCloudStatus('cloud');
+                    else if (e.target.value.trim()) setCloudStatus('github');
+                    else setCloudStatus('local');
                   }}
                   dir="ltr"
                   placeholder="ghp_… / github_pat_…"
@@ -2665,7 +2670,11 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
             <button
               type="button"
               disabled={isPublishing || !ghPat.trim()}
-              onClick={handleGitHubPublish}
+              onClick={async () => {
+                await handleGitHubPublish();
+                refreshPublishedState();
+                refreshSyncStatus();
+              }}
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20"
             >
               <Cloud className="w-4 h-4" />
