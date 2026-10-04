@@ -119,15 +119,17 @@ async function executeCloudWrite(
     }
     await ensureAuth();
     const docRef = doc(db, 'tour_data', MASTER_DOC_PATH);
-    const payload: CloudTourData = {
-      properties,
-      config: config || undefined,
-      selectedPropertyId: selectedPropertyId || undefined,
-      activeRoomId: activeRoomId || undefined,
+    // Build the payload without undefined fields — Firestore rejects undefined
+    // values even with { merge: true }, which would silently kill the write.
+    const payload: Partial<CloudTourData> & { updatedAt: string; schemaVersion: number } = {
       schemaVersion: CLOUD_SCHEMA_VERSION,
       updatedAt: new Date().toISOString()
     };
-    await setDoc(docRef, payload, { merge: true });
+    if (Array.isArray(properties) && properties.length > 0) payload.properties = properties;
+    if (config) payload.config = config;
+    if (selectedPropertyId) payload.selectedPropertyId = selectedPropertyId;
+    if (activeRoomId) payload.activeRoomId = activeRoomId;
+    await setDoc(docRef, payload as CloudTourData, { merge: true });
     return true;
   } catch (err: any) {
     console.warn('[Firebase Firestore] Notice while saving to cloud (local storage active):', err?.message || err);

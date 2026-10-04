@@ -50,10 +50,10 @@ import { PropertyListing, Room, PluginConfig, AdminUser, Hotspot, MaterialItem, 
 import { authService } from '../utils/authService';
 import { ensureAuth, auth } from '../firebase';
 import { isOwnerGoogleUser } from '../firebaseAuth';
-import { StorageService } from '../services/storageService';
+import { StorageService, getLastCloudSaveOutcome } from '../services/storageService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
-import { analyzeAndConvertVideoUrl, VideoUrlAnalysis } from '../utils/videoUrlHelper';
+import { analyzeAndConvertVideoUrl, VideoUrlAnalysis, isStaticHost } from '../utils/videoUrlHelper';
 
 interface AdminDashboardProps {
   properties: PropertyListing[];
@@ -108,6 +108,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [secConfirm, setSecConfirm] = useState<string>('');
   // Real cloud connectivity (Firebase reachability)
   const [cloudStatus, setCloudStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  // New-device sign-in (cross-device account restore): register / restore / recovery
+  const [deviceLoginMode, setDeviceLoginMode] = useState<'register' | 'restore' | 'recovery'>('register');
+  const [restorePassword, setRestorePassword] = useState<string>('');
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  // GitHub Publish (Tools tab) — PAT stored only in this browser's localStorage
+  const [ghPat, setGhPat] = useState<string>(() => { try { return localStorage.getItem('vbt_gh_pat') || ''; } catch { return ''; } });
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
 
   // Dashboard Active Tab
   const [adminTab, setAdminTab] = useState<AdminTab>('profiles');
@@ -278,6 +285,122 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } else {
       setAuthError(res.errorFa, res.error);
       soundEngine.triggerHapticChime(320);
+    }
+  };
+
+  // ── New-device sign-in: restore the SAME owner account from the published credential ──
+  const handleOwnerRestoreFromCloud = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginErrorEn(null);
+    setIsRestoring(true);
+    const res = await authService.restoreOwnerFromCloud(restorePassword);
+    setIsRestoring(false);
+    if (res.success && res.user) {
+      setHasOwnerAccount(true);
+      setIsAuthenticated(true);
+      setCurrentUser(res.user);
+      if (onAuthChange) onAuthChange(true);
+      setRestorePassword('');
+      showToast(`حساب مدیر روی این دستگاه بازیابی شد — ${res.user.email}`);
+    } else {
+      setAuthError(res.errorFa, res.error);
+      soundEngine.triggerHapticChime(320);
+    }
+  };
+
+  // ── New-device sign-in: reclaim the single identity with the recovery key (offline) ──
+  const handleOwnerReclaimWithRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginErrorEn(null);
+    if (ownerPassword !== ownerConfirm) {
+      setAuthError('رمز عبور با تکرار آن مطابقت ندارد.', 'Password and confirmation do not match.');
+      return;
+    }
+    setIsRestoring(true);
+    const res = await authService.loginWithRecoveryKeyOnNewDevice(ownerEmail, ownerRecoveryInput, ownerPassword);
+    setIsRestoring(false);
+    if (res.success && res.user) {
+      setHasOwnerAccount(true);
+      setIsAuthenticated(true);
+      setCurrentUser(res.user);
+      if (onAuthChange) onAuthChange(true);
+      setOwnerPassword('');
+      setOwnerConfirm('');
+      setOwnerRecoveryInput('');
+      showToast('حساب مدیر با کد بازیابی روی این دستگاه فعال شد.');
+    } else {
+      setAuthError(res.errorFa, res.error);
+      soundEngine.triggerHapticChime(320);
+    }
+  };
+
+  // ── GitHub Publish: commit tour-data.json + admin-credential.json via the GitHub Contents API ──
+  // The PAT is user-supplied and stays in this browser's localStorage. It gives the
+  // static site its global data store: every visitor reads these committed files.
+  const handleGitHubPublish = async () => {
+    const token = ghPat.trim();
+    if (!token) {
+      showToast('ابتدا توکن گیت‌هاب (PAT) را وارد کنید.');
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      const owner = 'Javad00077';
+      const repo = 'VibeTour-Pro';
+      const branch = 'main';
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      };
+
+      const putFile = async (path: string, content: string, message: string) => {
+        // Resolve the current file sha (needed for updates; absent for new files)
+        let sha: string | undefined;
+        try {
+          const metaRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers });
+          if (metaRes.ok) {
+            sha = (await metaRes.json())?.sha;
+          }
+        } catch {}
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), branch, ...(sha ? { sha } : {}) })
+        });
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({}));
+          throw new Error(`${path}: ${res.status} ${detail?.message || res.statusText}`);
+        }
+      };
+
+      // 1) Global tour data — what every visitor and device loads
+      const tourJson = StorageService.exportFullTourPackageJson(properties, config);
+      await putFile('public/tour-data.json', tourJson, 'Publish tour settings globally (VibeTour dashboard)');
+
+      // 2) Owner credential — hashes only, enables same-account sign-in on new devices
+      const cred = authService.getOwnerCredential();
+      if (cred) {
+        const credJson = JSON.stringify({
+          email: cred.email,
+          salt: cred.salt,
+          passwordHash: cred.passwordHash,
+          recoveryHash: cred.recoveryHash,
+          createdAt: cred.createdAt,
+          hashVersion: cred.hashVersion,
+          updatedAt: new Date().toISOString()
+        }, null, 2);
+        await putFile('public/admin-credential.json', credJson, 'Publish admin credential for cross-device sign-in (hashes only)');
+      }
+
+      showToast('منتشر شد! اجرای Actions را صبر کنید (۱ تا ۲ دقیقه) — سپس تنظیمات همه‌جا اعمال می‌شود.');
+    } catch (err: any) {
+      showToast(`انتشار ناموفق بود: ${err?.message || 'خطای نامشخص'} — توکن و دسترسی repo را بررسی کنید.`);
+      soundEngine.triggerHapticChime(320);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -492,16 +615,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const cfgSaved = await StorageService.saveConfig(config);
       await StorageService.saveActiveState(currentProperty.id, selectedRoomId);
 
-      // Only claim a successful Cloud (Firestore) sync when the owner is signed in.
-      // Otherwise the settings are saved to the current device (localStorage) and,
-      // if a local backend is running, to that server.
+      // Report the REAL cloud outcome — never fake a global sync that did not happen.
       const isOwner = isOwnerGoogleUser();
-      if (isOwner) {
-        showToast('All settings saved to Firebase Cloud Firestore and synchronized across devices!');
+      const cloudOutcome = getLastCloudSaveOutcome();
+      if (isOwner && cloudOutcome.success) {
+        showToast('ذخیره شد — تنظیمات در فایربیس منتشر شد و روی همه دستگاه‌ها اعمال می‌شود.');
+      } else if (isOwner && cloudOutcome.attempted && !cloudOutcome.success) {
+        showToast('روی این دستگاه ذخیره شد؛ اما انتشار ابری ناموفق بود (اتصال/VPN را بررسی و دوباره ذخیره کنید).');
       } else if (propSaved || cfgSaved) {
-        showToast('Settings saved to this device. Use Google sign-in (Super Admin) to sync them globally.');
+        showToast('روی این دستگاه ذخیره شد. برای انتشار جهانی: ورود با گوگل، یا تب ابزارها → «انتشار جهانی روی گیت‌هاب».');
       } else {
-        showToast('Settings saved to this device (no backend server detected — sign in with Google to sync globally).');
+        showToast('ذخیره محلی انجام شد (سرور بک‌اند یافت نشد). برای انتشار جهانی: گوگل یا GitHub Publish.');
       }
     } catch {
       showToast('Could not complete storage save.');
@@ -599,32 +723,87 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </button>
                 </div>
               ) : !hasOwnerAccount ? (
-                /* Registration */
-                <form onSubmit={handleOwnerRegister} className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/30 space-y-3">
+                /* New-device entry: restore published account / recovery-key reclaim / first-time register */
+                <div className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/30 space-y-3">
                   <div className="flex items-center gap-2 pb-2 border-b border-white/10">
                     <User className="w-4 h-4 text-[#c5a880]" />
-                    <span className="text-xs font-bold text-white" dir="rtl">ساخت حساب مدیر (ثبت‌نام یک‌باره)</span>
+                    <span className="text-xs font-bold text-white" dir="rtl">ورود مدیر روی این دستگاه</span>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] text-slate-300 block" dir="rtl">ایمیل مالک:</label>
-                    <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                  <p className="text-[11px] text-slate-400 leading-relaxed" dir="rtl">
+                    فقط «یک حساب» وجود دارد. اگر قبلاً روی دستگاه دیگری حساب ساخته و منتشر کرده‌اید، همان حساب را اینجا بازیابی کنید — حساب جدید نسازید.
+                  </p>
+                  <div className="grid grid-cols-3 gap-1 p-1 bg-[#12141f] rounded-xl border border-white/10 text-[10px] font-semibold">
+                    <button type="button" onClick={() => { setDeviceLoginMode('restore'); setLoginError(null); setLoginErrorEn(null); }} className={`py-2 rounded-lg transition-all ${deviceLoginMode === 'restore' ? 'bg-[#c5a880] text-black font-bold' : 'text-slate-400 hover:text-white'}`} dir="rtl">ورود روی دستگاه جدید</button>
+                    <button type="button" onClick={() => { setDeviceLoginMode('recovery'); setLoginError(null); setLoginErrorEn(null); }} className={`py-2 rounded-lg transition-all ${deviceLoginMode === 'recovery' ? 'bg-[#c5a880] text-black font-bold' : 'text-slate-400 hover:text-white'}`} dir="rtl">ورود با کد بازیابی</button>
+                    <button type="button" onClick={() => { setDeviceLoginMode('register'); setLoginError(null); setLoginErrorEn(null); }} className={`py-2 rounded-lg transition-all ${deviceLoginMode === 'register' ? 'bg-[#c5a880] text-black font-bold' : 'text-slate-400 hover:text-white'}`} dir="rtl">ساخت حساب (اولین دستگاه)</button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] text-slate-300 block" dir="rtl">رمز عبور (حداقل ۸ کاراکتر):</label>
-                      <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز عبور:</label>
-                      <input type="password" value={ownerConfirm} onChange={(e) => setOwnerConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
-                    </div>
-                  </div>
-                  <button type="submit" disabled={isLoggingIn} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20">
-                    <Key className="w-4 h-4" />
-                    <span dir="rtl">ساخت حساب مدیر</span>
-                  </button>
-                  <p className="text-[10px] text-slate-500 text-center" dir="rtl">ثبت‌نام فقط با جیمیل مالک (kazeme.javad@gmail.com) پذیرفته می‌شود.</p>
-                </form>
+
+                  {deviceLoginMode === 'register' && (
+                    <form onSubmit={handleOwnerRegister} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] text-slate-300 block" dir="rtl">ایمیل مالک:</label>
+                        <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] text-slate-300 block" dir="rtl">رمز عبور (حداقل ۸ کاراکتر):</label>
+                          <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز عبور:</label>
+                          <input type="password" value={ownerConfirm} onChange={(e) => setOwnerConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                        </div>
+                      </div>
+                      <button type="submit" disabled={isLoggingIn} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20">
+                        <Key className="w-4 h-4" />
+                        <span dir="rtl">ساخت حساب مدیر (فقط بار اول)</span>
+                      </button>
+                      <p className="text-[10px] text-slate-500 text-center" dir="rtl">ثبت‌نام فقط با جیمیل مالک (kazeme.javad@gmail.com) پذیرفته می‌شود. پس از ساخت، از تب ابزارها حساب را منتشر کنید تا روی سایر دستگاه‌ها قابل بازیابی باشد.</p>
+                    </form>
+                  )}
+
+                  {deviceLoginMode === 'restore' && (
+                    <form onSubmit={handleOwnerRestoreFromCloud} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] text-slate-300 block" dir="rtl">رمز عبور حساب مدیر اصلی:</label>
+                        <input type="password" value={restorePassword} onChange={(e) => setRestorePassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                      </div>
+                      <button type="submit" disabled={isRestoring} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20">
+                        <Cloud className="w-4 h-4" />
+                        <span dir="rtl">{isRestoring ? 'در حال بازیابی…' : 'بازیابی حساب مدیر (فقط رمز)'}</span>
+                      </button>
+                      <p className="text-[10px] text-slate-500 text-center" dir="rtl">این گزینه حساب منتشرشده از دستگاه اصلی را می‌خواند (admin-credential.json). اگر هنوز منتشر نشده، ابتدا از دستگاه اصلی در تب ابزارها «انتشار جهانی روی گیت‌هاب» را اجرا کنید.</p>
+                    </form>
+                  )}
+
+                  {deviceLoginMode === 'recovery' && (
+                    <form onSubmit={handleOwnerReclaimWithRecovery} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] text-slate-300 block" dir="rtl">ایمیل مالک:</label>
+                        <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] text-slate-300 block" dir="rtl">کد بازیابی (VBT-…):</label>
+                        <input type="text" value={ownerRecoveryInput} onChange={(e) => setOwnerRecoveryInput(e.target.value)} required dir="ltr" placeholder="VBT-XXXX-XXXX-XXXX-XXXX" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono tracking-wider" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] text-slate-300 block" dir="rtl">رمز جدید (≥ ۸ کاراکتر):</label>
+                          <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] text-slate-300 block" dir="rtl">تکرار رمز جدید:</label>
+                          <input type="password" value={ownerConfirm} onChange={(e) => setOwnerConfirm(e.target.value)} required minLength={8} dir="ltr" className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono" />
+                        </div>
+                      </div>
+                      <button type="submit" disabled={isRestoring} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all">
+                        <Key className="w-4 h-4" />
+                        <span dir="rtl">{isRestoring ? 'در حال فعال‌سازی…' : 'فعال‌سازی حساب با کد بازیابی'}</span>
+                      </button>
+                      <p className="text-[10px] text-slate-500 text-center" dir="rtl">با کد بازیابی، همان حساب مالک روی این دستگاه بازسازی می‌شود و می‌توانید رمز جدیدی برگزینید.</p>
+                    </form>
+                  )}
+                </div>
               ) : ownerResetMode ? (
                 /* Recovery reset */
                 <form onSubmit={handleOwnerReset} className="p-4 rounded-2xl bg-[#141624] border border-amber-500/30 space-y-3">
@@ -1837,17 +2016,28 @@ Manage properties, configure broker profiles, and customize marketing copy acros
               {/* Video Player Live Preview */}
               {(() => {
                 const analysis = analyzeAndConvertVideoUrl(selectedRoom.videoUrl || selectedRoom.mediaUrl);
-                const activePreviewUrl = analysis.streamUrl || selectedRoom.mediaUrl;
+                // Fallback chain: the preview tries each candidate in order and moves to
+                // the next one when a source fails (403 / HTML interstitial / CORS).
+                const previewCandidates = analysis.candidates.length > 0 ? analysis.candidates : [analysis.streamUrl].filter(Boolean);
+                const activePreviewUrl = previewCandidates[0] || selectedRoom.mediaUrl;
                 return (
                   <div className="space-y-2">
                     <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
-                      <video
-                        key={activePreviewUrl}
-                        src={activePreviewUrl}
-                        controls
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
+                      {analysis.platform === 'youtube' ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-6">
+                          <AlertTriangle className="w-8 h-8 text-amber-400" />
+                          <span className="text-xs font-bold text-amber-300" dir="rtl">لینک یوتیوب در موتور اسکرول پشتیبانی نمی‌شود</span>
+                          <span className="text-[11px] text-slate-400" dir="rtl">{analysis.warning}</span>
+                        </div>
+                      ) : (
+                        <video
+                          key={activePreviewUrl}
+                          src={activePreviewUrl}
+                          controls
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
 
                     {/* Stream Protocol Indicator */}
@@ -1929,7 +2119,7 @@ Manage properties, configure broker profiles, and customize marketing copy acros
                           Standard Google Drive share links load an HTML webpage, preventing kinetic scroll scrubbing. VibeTour Pro automatically converts this into a direct stream URL. Ensure your Drive file permissions are set to <strong>"Anyone with the link can view"</strong>.
                         </p>
                         <div className="flex flex-wrap gap-2 pt-1">
-                          {analysis.directOptions?.map((opt, i) => (
+                          {analysis.directOptions?.filter((opt) => !isStaticHost() || !opt.url.startsWith('/api/')).map((opt, i) => (
                             <button
                               key={i}
                               type="button"
@@ -1996,6 +2186,19 @@ Manage properties, configure broker profiles, and customize marketing copy acros
                             مشاهده راهنمای گیت‌هاب و ذخیره دائمی
                           </button>
                         </div>
+                      </div>
+                    );
+                  }
+                  if (analysis.platform === 'youtube') {
+                    return (
+                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 mt-2">
+                        <div className="flex items-center gap-1.5 text-xs text-amber-300 font-semibold">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>YouTube Link — Not Suitable for Scroll Scrubbing</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed" dir="rtl">
+                          یوتیوب امکان اسکرول فریم‌به‌فریم داخل تگ video را نمی‌دهد. فایل MP4 را دانلود کنید و روی گیت‌هاب (مخزن یا Releases) میزبانی کنید تا بدون لگ اسکرول شود.
+                        </p>
                       </div>
                     );
                   }
@@ -2333,6 +2536,53 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
 
           </div>
 
+          {/* Tool 5: GitHub Publish — global settings + account credential */}
+          <div className="p-6 rounded-3xl vbt-glass border border-[#c5a880]/30 space-y-4 shadow-xl">
+            <div className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-[#c5a880]" />
+              <h4 className="text-sm font-bold text-white">انتشار جهانی روی گیت‌هاب (GitHub Publish)</h4>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed" dir="rtl">
+              این کار دو فایل را در مخزن به‌روز می‌کند: <span className="font-mono">public/tour-data.json</span> (تنظیمات تور برای همه بازدیدکنندگان) و <span className="font-mono">public/admin-credential.json</span> (فقط هش رمز مدیر برای ورود روی دستگاه‌های جدید — رمز اصلی هرگز منتشر نمی‌شود).
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-slate-300 block" dir="rtl">توکن دسترسی شخصی گیت‌هاب (PAT) با دسترسی repo — فقط در همین مرورگر ذخیره می‌شود:</label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="password"
+                  value={ghPat}
+                  onChange={(e) => {
+                    setGhPat(e.target.value);
+                    try { localStorage.setItem('vbt_gh_pat', e.target.value); } catch {}
+                  }}
+                  dir="ltr"
+                  placeholder="ghp_… / github_pat_…"
+                  className="flex-1 bg-[#12141f] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#c5a880] font-mono"
+                />
+                <a
+                  href="https://github.com/settings/tokens?type=beta"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 text-center transition-colors"
+                >
+                  ساخت توکن ↗
+                </a>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isPublishing || !ghPat.trim()}
+              onClick={handleGitHubPublish}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20"
+            >
+              <Cloud className="w-4 h-4" />
+              <span dir="rtl">{isPublishing ? 'در حال انتشار…' : 'انتشار تنظیمات + حساب مدیر روی گیت‌هاب'}</span>
+            </button>
+            <p className="text-[10px] text-slate-500 leading-relaxed" dir="rtl">
+              پس از انتشار، Actions سایت را می‌سازد (۱ تا ۲ دقیقه). سپس همه دستگاه‌ها و بازدیدکنندگان همان تنظیمات را می‌بینند و ورود مدیر روی هر دستگاه جدید با همان رمز ممکن است.
+            </p>
+          </div>
+
         </div>
       )}
 
@@ -2640,7 +2890,7 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
                             </div>
 
                             <div className="space-y-2">
-                              {analysis.directOptions?.map((opt, i) => (
+                              {analysis.directOptions?.filter((opt) => !isStaticHost() || !opt.url.startsWith('/api/')).map((opt, i) => (
                                 <div key={i} className="p-2.5 rounded-lg bg-[#141624] border border-white/5 space-y-1">
                                   <div className="flex items-center justify-between">
                                     <span className="font-bold text-[#c5a880] text-[11px]">{opt.label}</span>

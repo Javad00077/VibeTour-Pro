@@ -1,14 +1,20 @@
 /**
  * Video URL Normalizer & Direct Stream Converter
- * Handles Google Drive, GitHub Releases/Raw, Dropbox, and Local Storage Streams
+ * Handles Google Drive, GitHub Releases/Raw, Dropbox, YouTube (warning), and Local Storage Streams
  */
 
 export interface VideoUrlAnalysis {
   originalUrl: string;
   streamUrl: string;
   isConverted: boolean;
-  platform: 'gdrive' | 'github' | 'dropbox' | 'local' | 'direct' | 'unsupported';
+  platform: 'gdrive' | 'github' | 'dropbox' | 'local' | 'direct' | 'youtube' | 'unsupported';
   fileId?: string;
+  /**
+   * Ordered list of streamable URLs. The player tries candidates[0] first and
+   * automatically falls back to the next one when a source fails to load
+   * (403 / HTML interstitial / CORS failure). Never empty when streamUrl is set.
+   */
+  candidates: string[];
   directOptions?: {
     label: string;
     url: string;
@@ -16,6 +22,12 @@ export interface VideoUrlAnalysis {
   }[];
   warning?: string;
   suggestion?: string;
+}
+
+/** True when the app runs on a static host without the Express backend (/api/*). */
+export function isStaticHost(): boolean {
+  if (typeof window === 'undefined') return true;
+  return window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
 }
 
 export function extractGoogleDriveId(url: string): string | null {
@@ -46,7 +58,22 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
       originalUrl: '',
       streamUrl: '',
       isConverted: false,
-      platform: 'unsupported'
+      platform: 'unsupported',
+      candidates: []
+    };
+  }
+
+  // 0. YouTube links cannot be played inside a plain <video> element (no
+  //    direct frame-accurate seeking, no MP4 stream). Surface a clear warning.
+  if (/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url)) {
+    return {
+      originalUrl: url,
+      streamUrl: '',
+      isConverted: false,
+      platform: 'youtube',
+      candidates: [],
+      warning: 'YouTube links cannot be scrubbed in the walkthrough engine. Download the MP4 and host it on GitHub (repo or Releases) instead.',
+      suggestion: 'Use a direct .mp4 URL — GitHub hosting gives true frame-accurate 60FPS scrubbing.'
     };
   }
 
@@ -56,7 +83,8 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
       originalUrl: url,
       streamUrl: url,
       isConverted: false,
-      platform: 'local'
+      platform: 'local',
+      candidates: [url]
     };
   }
 
@@ -67,13 +95,19 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
       const cdnUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
       const ucDownloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
       const proxyUrl = `/api/video-stream?url=${encodeURIComponent(ucDownloadUrl)}`;
+      const candidates = [cdnUrl, ucDownloadUrl];
+      if (!isStaticHost()) {
+        // Backend proxy (byte-range) works only where the Express server runs
+        candidates.unshift(proxyUrl);
+      }
 
       return {
         originalUrl: url,
-        streamUrl: cdnUrl,
+        streamUrl: candidates[0],
         isConverted: true,
         platform: 'gdrive',
         fileId,
+        candidates,
         directOptions: [
           {
             label: 'Google Direct CDN (Recommended)',
@@ -91,7 +125,7 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
             description: 'Streams through server with full HTTP 206 Partial Content byte ranges for smooth scrubbing.'
           }
         ],
-        warning: 'Google Drive requires the file to be shared with "Anyone with the link can view". Files > 100MB may prompt Google virus check screens.',
+        warning: 'Google Drive requires the file to be shared with "Anyone with the link can view". Files > 100MB may prompt Google virus check screens. If the video does not play, host the MP4 on GitHub instead.',
         suggestion: 'For optimal 60fps scrubbing, GitHub Releases or the repository public/videos/ folder is recommended.'
       };
     }
@@ -109,13 +143,14 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
 
     const isRawGithub = rawUrl.includes('raw.githubusercontent.com');
     if (isRawGithub) {
-      const isServerAvailable = typeof window !== 'undefined' && !window.location.hostname.endsWith('github.io');
-      const streamTarget = isServerAvailable ? `/api/video-stream?url=${encodeURIComponent(rawUrl)}` : rawUrl;
+      const useServer = !isStaticHost();
+      const streamTarget = useServer ? `/api/video-stream?url=${encodeURIComponent(rawUrl)}` : rawUrl;
       return {
         originalUrl: url,
         streamUrl: streamTarget,
         isConverted: true,
         platform: 'github',
+        candidates: streamTarget !== rawUrl ? [streamTarget, rawUrl] : [rawUrl],
         directOptions: [
           {
             label: 'VibeTour Optimized Video Stream (Recommended)',
@@ -139,6 +174,7 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
         streamUrl: url,
         isConverted: false,
         platform: 'github',
+        candidates: [url],
         suggestion: 'GitHub Releases link detected! Direct CDN streaming with byte-range support enabled.'
       };
     }
@@ -150,6 +186,7 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
         streamUrl: url,
         isConverted: false,
         platform: 'github',
+        candidates: [url],
         suggestion: 'GitHub Pages asset detected! Fast HTTP 206 range seeking enabled.'
       };
     }
@@ -158,7 +195,8 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
       originalUrl: url,
       streamUrl: url,
       isConverted: false,
-      platform: 'github'
+      platform: 'github',
+      candidates: [url]
     };
   }
 
@@ -172,6 +210,7 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
       streamUrl: rawDropbox,
       isConverted: true,
       platform: 'dropbox',
+      candidates: [rawDropbox, url],
       suggestion: 'Dropbox link converted to raw stream with ?raw=1.'
     };
   }
@@ -181,6 +220,7 @@ export function analyzeAndConvertVideoUrl(rawUrl: string): VideoUrlAnalysis {
     originalUrl: url,
     streamUrl: url,
     isConverted: false,
-    platform: 'direct'
+    platform: 'direct',
+    candidates: [url]
   };
 }

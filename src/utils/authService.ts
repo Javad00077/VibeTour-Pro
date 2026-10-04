@@ -109,6 +109,32 @@ function nowStamp(): string {
   return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
+/**
+ * Cloud-published owner credential (public/admin-credential.json).
+ * The main device publishes it via GitHub Publish (Tools tab); every other
+ * device can then restore the SAME admin account with just the password.
+ * Only hashes are stored — never the plaintext password or recovery key.
+ */
+interface PublishedOwnerCredential extends OwnerCredential {
+  updatedAt?: string;
+}
+
+async function fetchPublishedOwnerCredential(): Promise<PublishedOwnerCredential | null> {
+  try {
+    const baseUrl = ((import.meta as any)?.env?.BASE_URL) || './';
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    const res = await fetch(`${cleanBase}admin-credential.json?t=${Date.now()}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.email && data.salt && data.passwordHash && data.recoveryHash) {
+      return data as PublishedOwnerCredential;
+    }
+  } catch {
+    // not published / offline
+  }
+  return null;
+}
+
 export const authService = {
   // ───────────────────────── Owner Key account ─────────────────────────
 
@@ -231,6 +257,113 @@ export const authService = {
     return { success: true };
   },
 
+  /**
+   * CROSS-DEVICE LOGIN (bug fix: one admin account on every device).
+   * Restores the owner account from the cloud-published credential file
+   * (public/admin-credential.json committed by GitHub Publish from the main
+   * device). Verifies the password against the published PBKDF2 hash, then
+   * creates the local credential + session on THIS device.
+   */
+  async restoreOwnerFromCloud(password: string): Promise<AuthResult> {
+    const published = await fetchPublishedOwnerCredential();
+    if (!published) {
+      return {
+        success: false,
+        errorFa: 'حساب همگام‌شده‌ای منتشر نشده است. از دستگاه اصلی، در تب «ابزارها» گزینه «انتشار جهانی روی گیت‌هاب» را با فعال‌کردن همگام‌سازی حساب اجرا کنید.',
+        error: 'No published admin credential found — publish it from the main device (Tools → GitHub Publish).'
+      };
+    }
+    if (!ADMIN_EMAILS.includes((published.email || '').toLowerCase())) {
+      return { success: false, errorFa: 'حساب منتشرشده معتبر نیست.', error: 'Published credential email is not the allow-listed owner.' };
+    }
+    if (!password || password.length < 8) {
+      return { success: false, errorFa: 'رمز عبور باید حداقل ۸ کاراکتر باشد.', error: 'Password must be at least 8 characters.' };
+    }
+    const attempt = await deriveHash(password, published.salt, 'password');
+    if (attempt.hash !== published.passwordHash) {
+      return { success: false, errorFa: 'رمز عبور با حساب مدیر اصلی مطابقت ندارد.', error: 'Password does not match the published owner credential.' };
+    }
+    // Recreate the local credential so future logins work fully offline here
+    writeOwnerCredential({
+      email: published.email.toLowerCase(),
+      salt: published.salt,
+      passwordHash: published.passwordHash,
+      recoveryHash: published.recoveryHash,
+      createdAt: published.createdAt || new Date().toISOString(),
+      hashVersion: (published.hashVersion as 'pbkdf2' | 'fallback') || 'pbkdf2'
+    });
+    const clean = published.email.toLowerCase();
+    const adminUser: AdminUser = {
+      username: clean.split('@')[0],
+      email: clean,
+      displayName: 'Javad Kazemi',
+      role: 'Super Admin',
+      authProvider: 'owner-key',
+      avatar: '',
+      lastLogin: nowStamp()
+    };
+    this.setSession(adminUser);
+    return { success: true, user: adminUser };
+  },
+
+  /**
+   * RECOVERY-KEY DEVICE PORTABILITY.
+   * On a brand-new device (no local account yet) the owner can reclaim the
+   * single admin identity with the recovery key issued at registration,
+   * choosing a new local password. No Google / network required.
+   */
+  async loginWithRecoveryKeyOnNewDevice(email: string, recoveryKey: string, newPassword: string): Promise<AuthResult> {
+    const clean = (email || '').trim().toLowerCase();
+    if (!ADMIN_EMAILS.includes(clean)) {
+      return {
+        success: false,
+        errorFa: 'ورود فقط با جیمیل مالک مجاز است: kazeme.javad@gmail.com',
+        error: 'Only the owner Gmail may sign in.'
+      };
+    }
+    if (readOwnerCredential()) {
+      // Local account already exists — use normal login / recovery reset instead
+      return {
+        success: false,
+        errorFa: 'روی این دستگاه از قبل حساب مدیر وجود دارد — مستقیم وارد شوید.',
+        error: 'An owner account already exists on this device — sign in directly.'
+      };
+    }
+    if (!newPassword || newPassword.length < 8) {
+      return { success: false, errorFa: 'رمز جدید باید حداقل ۸ کاراکتر باشد.', error: 'New password must be at least 8 characters.' };
+    }
+    const normalized = (recoveryKey || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!/^VBT(-[A-Z0-9]{4}){4}$/.test(normalized)) {
+      return {
+        success: false,
+        errorFa: 'قالب کد بازیابی درست نیست (مثال: VBT-XXXX-XXXX-XXXX-XXXX).',
+        error: 'Recovery key format is invalid.'
+      };
+    }
+    const salt = randomHex(16);
+    const passwordHash = await deriveHash(newPassword, salt, 'password');
+    const recoveryHash = await deriveHash(normalized, salt, 'recovery');
+    writeOwnerCredential({
+      email: clean,
+      salt,
+      passwordHash: passwordHash.hash,
+      recoveryHash: recoveryHash.hash,
+      createdAt: new Date().toISOString(),
+      hashVersion: passwordHash.version
+    });
+    const adminUser: AdminUser = {
+      username: clean.split('@')[0],
+      email: clean,
+      displayName: 'Javad Kazemi',
+      role: 'Super Admin',
+      authProvider: 'owner-key',
+      avatar: '',
+      lastLogin: nowStamp()
+    };
+    this.setSession(adminUser);
+    return { success: true, user: adminUser };
+  },
+
   // ───────────────────────── Google (cloud path) ─────────────────────────
 
   async loginWithGoogle(): Promise<AuthResult> {
@@ -275,10 +408,11 @@ export const authService = {
         return { success: false, errorFa: 'مرورگر پنجره گوگل را بلاک کرد — popup را مجاز کنید.', error: 'Browser blocked the popup — allow popups and retry.' };
       }
       if (code.includes('unauthorized-domain')) {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
         return {
           success: false,
-          errorFa: 'این دامنه در کنسول Firebase مجاز نیست (Authentication → Settings → Authorized domains).',
-          error: 'This domain is not authorized in Firebase console.'
+          errorFa: `دامنه «${host}» در فهرست دامنه‌های مجاز فایربیس نیست. در کنسول Firebase بخش Authentication → Settings → Authorized domains آدرس «${host}» را اضافه کنید. تا آن زمان از «کلید مدیر» یا «ورود روی دستگاه جدید» استفاده کنید.`,
+          error: `auth/unauthorized-domain — add "${host}" in Firebase console → Authentication → Settings → Authorized domains. Meanwhile use the Owner Key or new-device sign-in.`
         };
       }
       if (code.includes('operation-not-allowed')) {

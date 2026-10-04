@@ -7,12 +7,61 @@ import {
   CloudTourData,
   isOwnerGoogleUser
 } from '../firebase';
+import { isStaticHost } from '../utils/videoUrlHelper';
 
 // Bumped to v8 — per-chapter video restart behavior + local GitHub URL mapping
 const LS_PROPERTIES_KEY = 'vbt_properties_v8';
 const LS_CONFIG_KEY = 'vbt_config_v8';
 const LS_SELECTED_PROP_ID_KEY = 'vbt_selected_property_id_v8';
 const LS_ACTIVE_ROOM_ID_KEY = 'vbt_active_room_id_v8';
+const LS_UPDATED_AT_KEY = 'vbt_updated_at_v1';
+
+// ---------------------------------------------------------------------
+// Last-edit timestamp — lets every device pick the NEWEST copy of the
+// tour data (local edit vs cloud vs published tour-data.json) instead of
+// letting a stale bundled file clobber fresh admin settings.
+// ---------------------------------------------------------------------
+function touchLastEdit(): string {
+  const stamp = new Date().toISOString();
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LS_UPDATED_AT_KEY, stamp);
+    }
+  } catch {}
+  return stamp;
+}
+
+export function getLastEditTimestamp(): string {
+  try {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(LS_UPDATED_AT_KEY) || '';
+    }
+  } catch {}
+  return '';
+}
+
+/** Outcome of the most recent cloud (Firestore) save attempt. */
+let lastCloudSaveOutcome: { attempted: boolean; success: boolean; at: string } = {
+  attempted: false,
+  success: false,
+  at: ''
+};
+
+export function getLastCloudSaveOutcome() {
+  return { ...lastCloudSaveOutcome };
+}
+
+/**
+ * True when a cloud snapshot is safe to apply over the local state.
+ * Guards the realtime subscription against overwriting newer local edits
+ * with an older cloud copy (e.g. when the owner edited while offline).
+ */
+export function isCloudDataNewer(cloudUpdatedAt?: string): boolean {
+  const local = getLastEditTimestamp();
+  if (!cloudUpdatedAt) return !local; // no timestamps → cloud may initialize
+  if (!local) return true;
+  return cloudUpdatedAt >= local;
+}
 
 const IDB_NAME = 'VibeTourProDB';
 const IDB_VERSION = 1;
@@ -198,129 +247,169 @@ export class StorageService {
     return null;
   }
 
-  // Load from Firebase Firestore / Backend / IndexedDB asynchronously
+  // ---------------------------------------------------------------------
+  // Async load — NEWEST-WINS across all stores.
+  // Candidates: Firestore cloud (owner publishes), backend API (local dev
+  // server), static published tour-data.json (GitHub Pages global store),
+  // and the local IndexedDB edit cache. Whichever carries the newest
+  // `updatedAt` wins, so a fresh visitor receives the published settings
+  // while the owner's newer offline edits are never clobbered.
+  // ---------------------------------------------------------------------
   public static async loadAsyncData(): Promise<{
     properties?: PropertyListing[];
     config?: PluginConfig;
     selectedPropertyId?: string;
     activeRoomId?: string;
   } | null> {
-    // 1. Attempt Firebase Cloud Firestore first (Global real-time cross-device database)
+    interface Candidate {
+      source: 'cloud' | 'backend' | 'static' | 'local';
+      priority: number; // tie-breaker when timestamps are missing/equal
+      updatedAt: string;
+      properties: PropertyListing[];
+      config?: PluginConfig;
+      selectedPropertyId?: string;
+      activeRoomId?: string;
+    }
+    const candidates: Candidate[] = [];
+
+    // 1. Firebase Cloud Firestore (global real-time cross-device database)
     try {
       const cloudData = await getCloudTourData();
       if (cloudData && Array.isArray(cloudData.properties) && cloudData.properties.length > 0) {
-        // Cache to LocalStorage and IndexedDB
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(LS_PROPERTIES_KEY, JSON.stringify(cloudData.properties));
-            if (cloudData.config) {
-              localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(cloudData.config));
-            }
-            if (cloudData.selectedPropertyId) {
-              localStorage.setItem(LS_SELECTED_PROP_ID_KEY, cloudData.selectedPropertyId);
-            }
-            if (cloudData.activeRoomId) {
-              localStorage.setItem(LS_ACTIVE_ROOM_ID_KEY, cloudData.activeRoomId);
-            }
-          }
-          await idbSet('properties', cloudData.properties);
-          if (cloudData.config) {
-            await idbSet('config', cloudData.config);
-          }
-        } catch {}
-
-        const cleanProps = sanitizeProperties(cloudData.properties);
-        return {
-          properties: cleanProps,
-          config: sanitizeConfig(cloudData.config),
+        candidates.push({
+          source: 'cloud',
+          priority: 3,
+          updatedAt: (cloudData as any).updatedAt || '',
+          properties: cloudData.properties,
+          config: cloudData.config,
           selectedPropertyId: cloudData.selectedPropertyId,
           activeRoomId: cloudData.activeRoomId,
-        };
+        });
       }
     } catch (err) {
       console.warn('[Firebase Firestore] Cloud database read notice:', err);
     }
 
-    // 2. Attempt backend API second (if local Express server is running)
-    try {
-      const res = await fetch('/api/properties');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.properties) && data.properties.length > 0) {
-          const cfgRes = await fetch('/api/config');
-          const cfgData = cfgRes.ok ? await cfgRes.json() : null;
-          const stateRes = await fetch('/api/active-state');
-          const stateData = stateRes.ok ? await stateRes.json() : null;
-
-          const cleanProps = sanitizeProperties(data.properties);
-          return {
-            properties: cleanProps,
-            config: sanitizeConfig(cfgData),
-            selectedPropertyId: stateData?.selectedPropertyId,
-            activeRoomId: stateData?.activeRoomId,
-          };
+    // 2. Backend API (only meaningful where the Express server actually runs)
+    if (!isStaticHost()) {
+      try {
+        const res = await fetch('/api/properties');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.properties) && data.properties.length > 0) {
+            const cfgRes = await fetch('/api/config');
+            const cfgData = cfgRes.ok ? await cfgRes.json() : null;
+            const stateRes = await fetch('/api/active-state');
+            const stateData = stateRes.ok ? await stateRes.json() : null;
+            candidates.push({
+              source: 'backend',
+              priority: 2,
+              updatedAt: data.updatedAt || '',
+              properties: data.properties,
+              config: cfgData || undefined,
+              selectedPropertyId: stateData?.selectedPropertyId,
+              activeRoomId: stateData?.activeRoomId,
+            });
+          }
         }
+      } catch {
+        // Backend not running
       }
-    } catch {
-      // Backend not running (e.g. GitHub Pages static host)
     }
 
-    // 3. Attempt static GitHub Pages bundled tour-data.json
+    // 3. Static published tour-data.json (the GitHub Pages global store)
+    let staticCandidate: Candidate | null = null;
     try {
       const baseUrl = ((import.meta as any)?.env?.BASE_URL) || './';
       const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
       const tourJsonUrl = `${cleanBase}tour-data.json?t=${Date.now()}`;
-      
       const staticRes = await fetch(tourJsonUrl);
       if (staticRes.ok) {
         const staticData = await staticRes.json();
         if (Array.isArray(staticData.properties) && staticData.properties.length > 0) {
-          const cleanCfg = sanitizeConfig(staticData.config);
-          const cleanProps = sanitizeProperties(staticData.properties);
-          try {
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(LS_PROPERTIES_KEY, JSON.stringify(cleanProps));
-              localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(cleanCfg));
-            }
-            await idbSet('properties', cleanProps);
-            await idbSet('config', cleanCfg);
-          } catch {}
-
-          return {
-            properties: cleanProps,
-            config: cleanCfg,
+          staticCandidate = {
+            source: 'static',
+            priority: 1,
+            updatedAt: staticData.updatedAt || '',
+            properties: staticData.properties,
+            config: staticData.config,
             selectedPropertyId: staticData.selectedPropertyId,
             activeRoomId: staticData.activeRoomId,
           };
+          candidates.push(staticCandidate);
         }
       }
     } catch {
       // Static tour-data.json not reachable
     }
 
-    // 4. Attempt local IndexedDB
+    // 4. Local edit cache (IndexedDB + last-edit timestamp)
     try {
       const idbProps = await idbGet<PropertyListing[]>('properties');
       const idbCfg = await idbGet<PluginConfig>('config');
       const idbSelected = await idbGet<string>('selectedPropertyId');
       const idbRoom = await idbGet<string>('activeRoomId');
-
       if (idbProps && Array.isArray(idbProps) && idbProps.length > 0) {
-        return {
-          properties: sanitizeProperties(idbProps),
-          config: sanitizeConfig(idbCfg),
+        candidates.push({
+          source: 'local',
+          priority: 0,
+          updatedAt: getLastEditTimestamp(),
+          properties: idbProps,
+          config: idbCfg || undefined,
           selectedPropertyId: idbSelected || undefined,
           activeRoomId: idbRoom || undefined,
-        };
+        });
       }
     } catch {}
 
-    return null;
+    if (candidates.length === 0) return null;
+
+    // Newest timestamp wins; missing timestamps lose to any timestamp;
+    // when everything is timestamp-less, source priority decides.
+    let best = candidates[0];
+    for (const c of candidates) {
+      if (c.updatedAt && best.updatedAt && c.updatedAt > best.updatedAt) {
+        best = c;
+      } else if (c.updatedAt && !best.updatedAt) {
+        best = c;
+      } else if (!c.updatedAt && !best.updatedAt && c.priority > best.priority) {
+        best = c;
+      }
+    }
+
+    // Cache the winning copy so the next cold start paints it instantly
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LS_PROPERTIES_KEY, JSON.stringify(best.properties));
+        if (best.config) {
+          localStorage.setItem(LS_CONFIG_KEY, JSON.stringify(best.config));
+        }
+        if (best.selectedPropertyId) {
+          localStorage.setItem(LS_SELECTED_PROP_ID_KEY, best.selectedPropertyId);
+        }
+        if (best.activeRoomId) {
+          localStorage.setItem(LS_ACTIVE_ROOM_ID_KEY, best.activeRoomId);
+        }
+      }
+      await idbSet('properties', best.properties);
+      if (best.config) {
+        await idbSet('config', best.config);
+      }
+    } catch {}
+
+    console.info(`[VibeTour] Tour data loaded from: ${best.source}` + (best.updatedAt ? ` (updated ${best.updatedAt})` : ''));
+    return {
+      properties: sanitizeProperties(best.properties),
+      config: sanitizeConfig(best.config),
+      selectedPropertyId: best.selectedPropertyId,
+      activeRoomId: best.activeRoomId,
+    };
   }
 
   // Save all properties to LocalStorage, IndexedDB, Firebase Firestore, and Backend API
-
   public static async saveProperties(properties: PropertyListing[]): Promise<boolean> {
+    const editStamp = touchLastEdit();
+
     let lsSuccess = false;
     try {
       if (typeof window !== 'undefined') {
@@ -334,39 +423,47 @@ export class StorageService {
     // Always persist to IndexedDB
     const idbSuccess = await idbSet('properties', properties);
 
-    // Persist to a local backend server if one is running. This is the true
-    // "global like a normal website" store for GitHub Pages static hosting.
-    try {
-      const res = await fetch('/api/properties', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ properties }),
-      });
-      if (res.status >= 200 && res.status < 300) {
-        lsSuccess = true;
+    // Persist to a local backend server if one is running (skipped on static hosts).
+    if (!isStaticHost()) {
+      try {
+        const res = await fetch('/api/properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ properties, updatedAt: editStamp }),
+        });
+        if (res.status >= 200 && res.status < 300) {
+          lsSuccess = true;
+        }
+      } catch (e) {
+        // Not running -- rely on localStorage/IndexedDB/Firestore.
       }
-    } catch (e) {
-      // Not running (static host) -- rely on localStorage/IndexedDB/Firestore.
     }
 
     // Cloud Firestore -- secure, owner-only global write.
-    // Only attempt when the owner is signed in as their Google account.
+    // Awaited so the caller knows the REAL cloud outcome (no fake success).
     if (isOwnerGoogleUser()) {
+      lastCloudSaveOutcome = { attempted: true, success: false, at: editStamp };
       const currentCfg = StorageService.getInitialConfig();
       const currentPropId = StorageService.getInitialSelectedPropertyId() || properties[0]?.id;
       const currentRoomId = StorageService.getInitialActiveRoomId() || properties[0]?.rooms[0]?.id;
-      saveCloudTourData(properties, currentCfg, currentPropId, currentRoomId).catch((err) => {
+      try {
+        const cloudOk = await saveCloudTourData(properties, currentCfg, currentPropId, currentRoomId);
+        lastCloudSaveOutcome = { attempted: true, success: cloudOk, at: editStamp };
+        if (!cloudOk) {
+          console.warn('[VibeTour] Firestore write did not succeed — data kept on this device only.');
+        }
+      } catch (err) {
+        lastCloudSaveOutcome = { attempted: true, success: false, at: editStamp };
         console.warn('[Firebase Firestore] Cloud save notice:', err);
-      });
-      return lsSuccess || idbSuccess;
+      }
     }
 
-    // Not signed in as owner: never write to Firestore, never claim it succeeded.
     return lsSuccess || idbSuccess;
   }
 
   public static async saveConfig(config: PluginConfig): Promise<boolean> {
     const cleanConfig: PluginConfig = sanitizeConfig(config);
+    const editStamp = touchLastEdit();
 
     let lsSuccess = false;
     try {
@@ -380,28 +477,38 @@ export class StorageService {
 
     await idbSet('config', cleanConfig);
 
-    // Persist to a local backend server if one is running.
-    try {
-      const res = await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cleanConfig),
-      });
-      if (res.status >= 200 && res.status < 300) {
-        lsSuccess = true;
+    // Persist to a local backend server if one is running (skipped on static hosts).
+    if (!isStaticHost()) {
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...cleanConfig, updatedAt: editStamp }),
+        });
+        if (res.status >= 200 && res.status < 300) {
+          lsSuccess = true;
+        }
+      } catch {
+        // Not running -- rely on localStorage/IndexedDB/Firestore.
       }
-    } catch {
-      // Not running (static host) -- rely on localStorage/IndexedDB/Firestore.
     }
 
-    // Cloud Firestore -- secure, owner-only global write.
+    // Cloud Firestore -- secure, owner-only global write (awaited, real outcome).
     if (isOwnerGoogleUser()) {
+      lastCloudSaveOutcome = { attempted: true, success: false, at: editStamp };
       const currentProps = StorageService.getInitialProperties();
       const currentPropId = StorageService.getInitialSelectedPropertyId();
       const currentRoomId = StorageService.getInitialActiveRoomId();
-      saveCloudTourData(currentProps, cleanConfig, currentPropId || undefined, currentRoomId || undefined).catch((err) => {
+      try {
+        const cloudOk = await saveCloudTourData(currentProps, cleanConfig, currentPropId || undefined, currentRoomId || undefined);
+        lastCloudSaveOutcome = { attempted: true, success: cloudOk, at: editStamp };
+        if (!cloudOk) {
+          console.warn('[VibeTour] Firestore config write did not succeed — kept on this device only.');
+        }
+      } catch (err) {
+        lastCloudSaveOutcome = { attempted: true, success: false, at: editStamp };
         console.warn('[Firebase Firestore] Cloud config save notice:', err);
-      });
+      }
     }
     // If the owner is not signed in, the privileged write is skipped entirely.
 
@@ -423,13 +530,15 @@ export class StorageService {
       await idbSet('activeRoomId', roomId);
     }
 
-    try {
-      await fetch('/api/active-state', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedPropertyId: propertyId, activeRoomId: roomId }),
-      });
-    } catch {}
+    if (!isStaticHost()) {
+      try {
+        await fetch('/api/active-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ selectedPropertyId: propertyId, activeRoomId: roomId }),
+        });
+      } catch {}
+    }
   }
 
   // Expose Realtime Firestore subscription for seamless multi-device live updates
@@ -451,9 +560,11 @@ export class StorageService {
     await idbSet('selectedPropertyId', defaultProps[0].id);
     await idbSet('activeRoomId', defaultProps[0].rooms[0].id);
 
-    try {
-      await fetch('/api/reset', { method: 'POST' });
-    } catch {}
+    if (!isStaticHost()) {
+      try {
+        await fetch('/api/reset', { method: 'POST' });
+      } catch {}
+    }
   }
 
   // Export complete tour package (properties + config) as JSON string

@@ -158,61 +158,86 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   // ------------------------------------------------------------------
   // SHARED-VIDEO MODE: when every chapter rides the same master film,
   // render exactly ONE <video> (single hardware decoder = zero lag).
+  // YouTube links are excluded — they cannot be scrubbed in a <video> element.
   // ------------------------------------------------------------------
   const allRoomsShareVideo = useMemo(
     () =>
       property.rooms.length > 1 &&
-      property.rooms.every((r) => r.videoUrl && r.videoUrl === property.rooms[0].videoUrl),
+      property.rooms.every((r) => r.videoUrl && r.videoUrl === property.rooms[0].videoUrl) &&
+      analyzeAndConvertVideoUrl(property.rooms[0].videoUrl).candidates.length > 0,
     [property.rooms]
   );
 
   // Sync video sources with priority: active room + neighbors load first,
-  // remaining chambers stream in staged one-by-one so playback starts instantly
-  const assignedSrcsRef = useRef<Set<string>>(new Set());
+  // remaining chambers stream in staged one-by-one so playback starts instantly.
+  // The map tracks room.id -> RESOLVED url, so when the admin edits a room's
+  // videoUrl the new resolved URL is re-assigned (poster latch reset) instead
+  // of being ignored until remount — the stale-URL bug.
+  const assignedSrcsRef = useRef<Map<string, string>>(new Map());
+  const resolvedCandidatesRef = useRef<Map<string, string[]>>(new Map());
+
+  const resolveCandidates = useCallback((room?: Room): string[] => {
+    if (!room || !room.videoUrl || room.videoUrl.startsWith('blob:')) return [];
+    return analyzeAndConvertVideoUrl(room.videoUrl).candidates;
+  }, []);
+
+  // Attach a fallback walker: on load error, advance to the next candidate
+  // (proxy → raw → CDN alternative) instead of dying on the first failure.
+  const installCandidateFallback = useCallback((el: HTMLVideoElement, key: string) => {
+    el.onerror = () => {
+      const list = resolvedCandidatesRef.current.get(key) || [];
+      const idx = parseInt(el.dataset.candidateIdx || '0', 10) + 1;
+      if (idx < list.length) {
+        el.dataset.candidateIdx = String(idx);
+        el.dataset.currentStreamUrl = list[idx];
+        el.src = list[idx];
+        el.load();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     // Shared-video mode: ONE master element carries the whole film — no per-room
     // sources, no staged loading. A single HTTP 206 stream, a single decoder.
     if (allRoomsShareVideo) {
       const vid = masterVideoRef.current;
-      const masterUrl = property.rooms[0]?.videoUrl;
-      if (vid && masterUrl && !masterUrl.startsWith('blob:')) {
-        const resolved = analyzeAndConvertVideoUrl(masterUrl).streamUrl;
-        if (vid.dataset.currentStreamUrl !== resolved) {
-          vid.dataset.currentStreamUrl = resolved;
-          vid.src = resolved;
-          vid.load();
-        }
+      const masterRoom = property.rooms[0];
+      const candidates = resolveCandidates(masterRoom);
+      const resolved = candidates[0] || '';
+      if (vid && resolved && vid.dataset.currentStreamUrl !== resolved) {
+        vid.dataset.currentStreamUrl = resolved;
+        vid.dataset.candidateIdx = '0';
+        resolvedCandidatesRef.current.set('__master__', candidates);
+        // URL changed → drop the sticky latch so the poster shows until the
+        // new source delivers its first decodable frame
+        videoLatchedRef.current.delete('__master__');
+        installCandidateFallback(vid, '__master__');
+        vid.src = resolved;
+        vid.load();
       }
       assignedSrcsRef.current.clear();
       return;
     }
 
     const assignSrc = (room: Room) => {
-      if (!room.videoUrl || room.videoUrl.startsWith('blob:')) return;
-      if (assignedSrcsRef.current.has(room.id)) return;
+      const candidates = resolveCandidates(room);
+      if (candidates.length === 0) return;
+      const resolved = candidates[0];
       const el = roomVideoRefs.current.get(room.id);
       if (!el) return;
-      const resolved = analyzeAndConvertVideoUrl(room.videoUrl).streamUrl;
-      if (el.dataset.currentStreamUrl !== resolved) {
-        el.dataset.currentStreamUrl = resolved;
-        // If the proxy stream fails, fall back to the raw source once
-        el.onerror = () => {
-          if (resolved.includes('/api/video-stream?url=')) {
-            try {
-              const rawParam = decodeURIComponent(resolved.split('/api/video-stream?url=')[1]);
-              if (rawParam && el.src !== rawParam) {
-                el.onerror = null;
-                el.src = rawParam;
-                el.load();
-                return;
-              }
-            } catch {}
-          }
-        };
-        el.src = resolved;
-        el.load();
-      }
-      assignedSrcsRef.current.add(room.id);
+      // Re-assign BOTH on first load and whenever the resolved URL changed
+      // (edited videoUrl). The old Set-based check assigned only once per
+      // mount, so edited links never reached the player.
+      if (el.dataset.currentStreamUrl === resolved && assignedSrcsRef.current.get(room.id) === resolved) return;
+      assignedSrcsRef.current.set(room.id, resolved);
+      resolvedCandidatesRef.current.set(room.id, candidates);
+      el.dataset.currentStreamUrl = resolved;
+      el.dataset.candidateIdx = '0';
+      // Edited URL → reset the latch so the new clip latches cleanly
+      videoLatchedRef.current.delete(room.id);
+      installCandidateFallback(el, room.id);
+      el.src = resolved;
+      el.load();
     };
 
     const videoRooms = property.rooms.filter((r) => r.videoUrl && !r.videoUrl.startsWith('blob:'));
@@ -234,7 +259,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     }, 1200);
 
     return () => clearInterval(timer);
-  }, [property.rooms, activeRoom.id, allRoomsShareVideo]);
+  }, [property.rooms, activeRoom.id, allRoomsShareVideo, resolveCandidates, installCandidateFallback]);
 
   // Attach & warm the master video element so the first scroll tick paints instantly
   useEffect(() => {
@@ -602,8 +627,17 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           // Shared mode scrubs by the ACTIVE CHAPTER's local progress so the film
           // restarts from its first frame in every section of the house.
           let videoRendered = false;
-          const hasVideo = !!currRoom.videoUrl && !currRoom.videoUrl.startsWith('blob:');
+          const hasVideo = !!currRoom.videoUrl && !currRoom.videoUrl.startsWith('blob:') && analyzeAndConvertVideoUrl(currRoom.videoUrl).candidates.length > 0;
           const sharedMaster = allRoomsShareVideo ? masterVideoRef.current : null;
+          // Adaptive seek threshold: frame-accurate for same-origin/local sources,
+          // relaxed for cross-origin streams where every seek is a network
+          // round-trip (aggressive seeking = stutter + lag).
+          const seekDriftThreshold = (vid: HTMLVideoElement) =>
+            isMobileRef.current || vid.crossOrigin === 'anonymous'
+              ? 0.05
+              : vid.src && !vid.src.startsWith(window.location.origin) && /^https?:/i.test(vid.src)
+                ? 0.03
+                : 0.016;
 
           if (sharedMaster) {
             const vid = sharedMaster;
@@ -626,7 +660,6 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
               if (dur > 0) {
                 const targetTime = Math.max(0, Math.min(dur - 0.033, localProg * dur));
-                const isMobile = isMobileRef.current;
 
                 // Seek coalescing: while the decoder is busy seeking, remember only the
                 // newest requested time and apply it the moment the decoder frees up.
@@ -637,7 +670,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                   const wanted = pendingSeekRef.current !== null ? pendingSeekRef.current : targetTime;
                   pendingSeekRef.current = null;
                   const drift = Math.abs(vid.currentTime - wanted);
-                  if (drift > (isMobile ? 0.05 : 0.016)) {
+                  if (drift > seekDriftThreshold(vid)) {
                     lastSeekTimeRef.current = performance.now();
                     try {
                       vid.currentTime = Math.max(0, Math.min(dur - 0.033, wanted));
@@ -674,7 +707,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 } else {
                   const wanted = pendingSeekRef.current !== null ? pendingSeekRef.current : targetTime;
                   pendingSeekRef.current = null;
-                  if (Math.abs(vid.currentTime - wanted) > 0.016) {
+                  if (Math.abs(vid.currentTime - wanted) > seekDriftThreshold(vid)) {
                     lastSeekTimeRef.current = performance.now();
                     try {
                       vid.currentTime = Math.max(0, Math.min(vid.duration - 0.033, wanted));

@@ -37,7 +37,7 @@ import { VideoOptimizerGuide } from './components/VideoOptimizerGuide';
 import { HeaderNav } from './components/HeaderNav';
 import { AdminDashboard } from './components/AdminDashboard';
 import { authService } from './utils/authService';
-import { StorageService, sanitizeConfig } from './services/storageService';
+import { StorageService, sanitizeConfig, isCloudDataNewer } from './services/storageService';
 
 export default function App() {
   const [properties, setProperties] = useState<PropertyListing[]>(() => {
@@ -100,8 +100,13 @@ export default function App() {
       }
     });
 
-    // Real-time cloud subscription across all devices
+    // Real-time cloud subscription across all devices.
+    // Guard: never apply an OLDER cloud copy over newer local edits
+    // (e.g. the owner saved offline while the cloud doc is stale).
     const unsub = StorageService.subscribeToCloudTourData((cloudData) => {
+      if (!isCloudDataNewer((cloudData as any).updatedAt)) {
+        return;
+      }
       if (cloudData.properties && cloudData.properties.length > 0) {
         setProperties(cloudData.properties);
         const match = cloudData.selectedPropertyId
