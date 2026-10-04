@@ -1053,6 +1053,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               if (el) roomVideoRefs.current.set('__master__', el);
             }}
             data-room-id="__master__"
+            crossOrigin="anonymous"
             muted
             playsInline
             preload="auto"
@@ -1071,6 +1072,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 roomVideoRefs.current.delete(room.id);
               }
             }}
+            crossOrigin="anonymous"
             muted
             playsInline
             loop

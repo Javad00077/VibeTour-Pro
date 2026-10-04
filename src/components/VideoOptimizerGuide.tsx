@@ -477,6 +477,7 @@ location ~* \\.(mp4|webm|ogg)$ {
                   <div className="relative rounded-xl overflow-hidden bg-black aspect-video max-h-56 border border-white/10 mx-auto flex items-center justify-center">
                     <video
                       ref={testVideoRef}
+                      crossOrigin="anonymous"
                       muted
                       playsInline
                       className="w-full h-full object-contain"

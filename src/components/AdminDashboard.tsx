@@ -2102,6 +2102,7 @@ Manage properties, configure broker profiles, and customize marketing copy acros
                         <video
                           key={activePreviewUrl}
                           src={activePreviewUrl}
+                          crossOrigin="anonymous"
                           controls
                           playsInline
                           className="w-full h-full object-cover"
