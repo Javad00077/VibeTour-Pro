@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield,
   Key,
@@ -51,6 +51,15 @@ import { authService } from '../utils/authService';
 import { ensureAuth, auth } from '../firebase';
 import { isOwnerGoogleUser } from '../firebaseAuth';
 import { StorageService, getLastCloudSaveOutcome } from '../services/storageService';
+import {
+  getStoredPat,
+  setStoredPat,
+  hasStoredPat,
+  publishGlobalTourData,
+  probePublishedState,
+  PublishResult,
+  PublishedProbe
+} from '../services/globalPublishService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
 import { analyzeAndConvertVideoUrl, VideoUrlAnalysis, isStaticHost } from '../utils/videoUrlHelper';
@@ -106,14 +115,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [secCurrent, setSecCurrent] = useState<string>('');
   const [secNew, setSecNew] = useState<string>('');
   const [secConfirm, setSecConfirm] = useState<string>('');
-  // Real cloud connectivity (Firebase reachability)
-  const [cloudStatus, setCloudStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  // Real sync state. 'cloud' = owner signed in with Google (Firestore writes
+  // allowed), 'github' = a GitHub token is configured (global publish works
+  // without Google), 'local' = neither, so saves stay on this device only.
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'cloud' | 'github' | 'local'>('checking');
+  // What the live site currently serves (published tour data + credential)
+  const [published, setPublished] = useState<PublishedProbe | null>(null);
   // New-device sign-in (cross-device account restore): register / restore / recovery
   const [deviceLoginMode, setDeviceLoginMode] = useState<'register' | 'restore' | 'recovery'>('register');
   const [restorePassword, setRestorePassword] = useState<string>('');
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
   // GitHub Publish (Tools tab) — PAT stored only in this browser's localStorage
-  const [ghPat, setGhPat] = useState<string>(() => { try { return localStorage.getItem('vbt_gh_pat') || ''; } catch { return ''; } });
+  const [ghPat, setGhPat] = useState<string>(() => getStoredPat());
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
 
   // Dashboard Active Tab
@@ -205,16 +218,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast('Signed out successfully.');
   };
 
-  // Real Firebase reachability probe for the header cloud pill
+  // Resolve the effective sync channel and read what the live site serves.
+  // Runs after the anonymous Firebase auth settles and again whenever the
+  // sign-in method or the stored GitHub token changes.
   useEffect(() => {
     let cancelled = false;
     ensureAuth().finally(() => {
       setTimeout(() => {
-        if (!cancelled) setCloudStatus(auth.currentUser ? 'online' : 'offline');
-      }, 1000);
+        if (cancelled) return;
+        if (isOwnerGoogleUser()) setCloudStatus('cloud');
+        else if (hasStoredPat()) setCloudStatus('github');
+        else setCloudStatus('local');
+      }, 900);
     });
+    probePublishedState().then((probe) => {
+      if (!cancelled) setPublished(probe);
+    }).catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [currentUser?.authProvider, ghPat]);
 
   const setAuthError = (fa: string | undefined, en: string | undefined) => {
     setLoginError(fa || en || 'خطای نامشخص.');
@@ -339,70 +360,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // ── GitHub Publish: commit tour-data.json + admin-credential.json via the GitHub Contents API ──
   // The PAT is user-supplied and stays in this browser's localStorage. It gives the
   // static site its global data store: every visitor reads these committed files.
-  const handleGitHubPublish = async () => {
+  const handleGitHubPublish = async (): Promise<PublishResult | null> => {
     const token = ghPat.trim();
     if (!token) {
       showToast('ابتدا توکن گیت‌هاب (PAT) را وارد کنید.');
-      return;
+      return null;
     }
+    setStoredPat(token);
     setIsPublishing(true);
     try {
-      const owner = 'Javad00077';
-      const repo = 'VibeTour-Pro';
-      const branch = 'main';
-      const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28'
-      };
-
-      const putFile = async (path: string, content: string, message: string) => {
-        // Resolve the current file sha (needed for updates; absent for new files)
-        let sha: string | undefined;
-        try {
-          const metaRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers });
-          if (metaRes.ok) {
-            sha = (await metaRes.json())?.sha;
-          }
-        } catch {}
-        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-          method: 'PUT',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), branch, ...(sha ? { sha } : {}) })
-        });
-        if (!res.ok) {
-          const detail = await res.json().catch(() => ({}));
-          throw new Error(`${path}: ${res.status} ${detail?.message || res.statusText}`);
-        }
-      };
-
-      // 1) Global tour data — what every visitor and device loads
-      const tourJson = StorageService.exportFullTourPackageJson(properties, config);
-      await putFile('public/tour-data.json', tourJson, 'Publish tour settings globally (VibeTour dashboard)');
-
-      // 2) Owner credential — hashes only, enables same-account sign-in on new devices
-      const cred = authService.getOwnerCredential();
-      if (cred) {
-        const credJson = JSON.stringify({
-          email: cred.email,
-          salt: cred.salt,
-          passwordHash: cred.passwordHash,
-          recoveryHash: cred.recoveryHash,
-          createdAt: cred.createdAt,
-          hashVersion: cred.hashVersion,
-          updatedAt: new Date().toISOString()
-        }, null, 2);
-        await putFile('public/admin-credential.json', credJson, 'Publish admin credential for cross-device sign-in (hashes only)');
+      const result = await publishGlobalTourData({
+        properties,
+        config,
+        credential: authService.getOwnerCredential(),
+        token
+      });
+      if (result.ok) {
+        showToast('منتشر شد! اجرای Actions را صبر کنید (۱ تا ۲ دقیقه) — سپس تنظیمات همه‌جا اعمال می‌شود.');
+        soundEngine.triggerHapticChime(660);
+      } else {
+        showToast(`انتشار ناموفق بود: ${result.failed[0]?.reason || 'خطای نامشخص'} — توکن و دسترسی repo را بررسی کنید.`);
+        soundEngine.triggerHapticChime(320);
       }
-
-      showToast('منتشر شد! اجرای Actions را صبر کنید (۱ تا ۲ دقیقه) — سپس تنظیمات همه‌جا اعمال می‌شود.');
-    } catch (err: any) {
-      showToast(`انتشار ناموفق بود: ${err?.message || 'خطای نامشخص'} — توکن و دسترسی repo را بررسی کنید.`);
-      soundEngine.triggerHapticChime(320);
+      return result;
     } finally {
       setIsPublishing(false);
     }
   };
+
+  // Refresh what the live site currently serves (published data + credential)
+  const refreshPublishedState = useCallback(async () => {
+    try {
+      const probe = await probePublishedState();
+      setPublished(probe);
+    } catch {
+      // offline — keep the previous reading
+    }
+  }, []);
+
+  // Resolve the effective sync channel: Firestore (owner Google) or GitHub (PAT)
+  const refreshSyncStatus = useCallback(() => {
+    if (isOwnerGoogleUser()) setCloudStatus('cloud');
+    else if (hasStoredPat()) setCloudStatus('github');
+    else setCloudStatus('local');
+  }, []);
 
   const handleCopyRecoveryKey = async () => {
     if (!freshRecoveryKey) return;
@@ -607,7 +608,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast('Permanent tour-data.json downloaded! Place in public/ folder for 100% permanent GitHub & Incognito guest access.');
   };
 
-  // Save All to Persistent Storage (LocalStorage + IndexedDB + Backend API)
+  // Save All: local stores + (when possible) GLOBAL publish.
+  // When a GitHub token is configured this publishes tour-data.json (and the
+  // owner credential) automatically, so one Save & Sync All makes the settings
+  // visible on every device and visitor — no Google account required.
   const handleSaveAll = async () => {
     setIsSavingAll(true);
     try {
@@ -615,20 +619,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const cfgSaved = await StorageService.saveConfig(config);
       await StorageService.saveActiveState(currentProperty.id, selectedRoomId);
 
-      // Report the REAL cloud outcome — never fake a global sync that did not happen.
+      // Report the REAL outcome — never fake a global sync that did not happen.
       const isOwner = isOwnerGoogleUser();
       const cloudOutcome = getLastCloudSaveOutcome();
-      if (isOwner && cloudOutcome.success) {
-        showToast('ذخیره شد — تنظیمات در فایربیس منتشر شد و روی همه دستگاه‌ها اعمال می‌شود.');
-      } else if (isOwner && cloudOutcome.attempted && !cloudOutcome.success) {
-        showToast('روی این دستگاه ذخیره شد؛ اما انتشار ابری ناموفق بود (اتصال/VPN را بررسی و دوباره ذخیره کنید).');
-      } else if (propSaved || cfgSaved) {
-        showToast('روی این دستگاه ذخیره شد. برای انتشار جهانی: ورود با گوگل، یا تب ابزارها → «انتشار جهانی روی گیت‌هاب».');
-      } else {
-        showToast('ذخیره محلی انجام شد (سرور بک‌اند یافت نشد). برای انتشار جهانی: گوگل یا GitHub Publish.');
+      const token = getStoredPat();
+
+      let publish: PublishResult | null = null;
+      if (token.trim()) {
+        publish = await publishGlobalTourData({
+          properties,
+          config,
+          credential: authService.getOwnerCredential(),
+          token
+        });
       }
+
+      if (publish?.ok) {
+        showToast(isOwner && cloudOutcome.success
+          ? 'ذخیره شد — هم در فایربیس و هم روی گیت‌هاب منتشر شد (۱ دقیقه بعد همه‌جا اعمال می‌شود).'
+          : 'ذخیره و انتشار سراسری انجام شد — حدود ۱ دقیقه بعد همه دستگاه‌ها و بازدیدکنندگان تنظیمات جدید را می‌بینند.');
+        soundEngine.triggerHapticChime(660);
+      } else if (isOwner && cloudOutcome.success) {
+        showToast('ذخیره شد — تنظیمات در فایربیس منتشر شد و روی همه دستگاه‌ها اعمال می‌شود.');
+      } else if (publish && !publish.ok) {
+        showToast(`ذخیره محلی شد؛ انتشار سراسری ناموفق بود: ${publish.failed[0]?.reason || 'خطای نامشخص'}`);
+        soundEngine.triggerHapticChime(320);
+      } else if (isOwner && cloudOutcome.attempted) {
+        showToast('روی این دستگاه ذخیره شد؛ انتشار ابری ناموفق بود (اتصال/VPN را بررسی و دوباره ذخیره کنید).');
+      } else if (propSaved || cfgSaved) {
+        showToast('فقط روی این دستگاه ذخیره شد. برای انتشار سراسری: تب ابزارها ← توکن گیت‌هاب را وارد کنید.');
+      } else {
+        showToast('ذخیره محلی انجام شد (سرور بک‌اند یافت نشد). برای انتشار سراسری: تب ابزارها ← توکن گیت‌هاب.');
+      }
+      refreshSyncStatus();
+      refreshPublishedState();
     } catch {
-      showToast('Could not complete storage save.');
+      showToast('ذخیره‌سازی کامل نشد.');
     } finally {
       setIsSavingAll(false);
     }
@@ -993,14 +1019,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Top Header Actions */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-          {/* Cloud Firestore Sync Status Pill (real connectivity) */}
-          <div
-            title={cloudStatus === 'online' ? 'اتصال ابری فعال است' : 'اتصال به فایربیس برقرار نشد — ذخیره فقط محلی می‌شود. برای ذخیره ابری VPN لازم است.'}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs ${cloudStatus === 'online' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : cloudStatus === 'offline' ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' : 'bg-white/5 border-white/10 text-slate-400'}`}
+          {/* Global sync status pill — reflects the channel that actually publishes */}
+          <button
+            type="button"
+            onClick={() => {
+              if (cloudStatus === 'local') setAdminTab('tools');
+              refreshPublishedState();
+            }}
+            title={
+              cloudStatus === 'cloud'
+                ? 'انتشار ابری فعال است — تنظیمات در فایربیس منتشر می‌شود.'
+                : cloudStatus === 'github'
+                  ? 'انتشار سراسری از طریق گیت‌هاب فعال است — هر ذخیره، تنظیمات را برای همه منتشر می‌کند.'
+                  : 'هیچ کانال سراسری فعال نیست — تنظیمات فقط روی این دستگاه ذخیره می‌شود. برای فعال‌سازی، تب ابزارها را باز کنید و توکن گیت‌هاب را وارد کنید.'
+            }
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
+              cloudStatus === 'cloud'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : cloudStatus === 'github'
+                  ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                  : cloudStatus === 'local'
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                    : 'bg-white/5 border-white/10 text-slate-400'
+            }`}
           >
-            <span className={`w-2 h-2 rounded-full ${cloudStatus === 'online' ? 'bg-emerald-400 animate-pulse' : cloudStatus === 'offline' ? 'bg-rose-400' : 'bg-slate-400 animate-pulse'}`} />
-            <span className="font-mono text-[11px]">{cloudStatus === 'online' ? 'Cloud: Online' : cloudStatus === 'offline' ? 'Cloud: Offline' : 'Cloud: …'}</span>
-          </div>
+            <span className={`w-2 h-2 rounded-full ${
+              cloudStatus === 'cloud' ? 'bg-emerald-400 animate-pulse'
+                : cloudStatus === 'github' ? 'bg-cyan-400 animate-pulse'
+                : cloudStatus === 'local' ? 'bg-amber-400'
+                : 'bg-slate-400 animate-pulse'
+            }`} />
+            <span className="font-mono text-[11px]">
+              {cloudStatus === 'cloud' ? 'Cloud: Online'
+                : cloudStatus === 'github' ? 'Sync: GitHub'
+                : cloudStatus === 'local' ? 'Sync: Local Only'
+                : 'Sync: …'}
+            </span>
+          </button>
 
           {/* Explicit Save & Sync Button */}
           <button
@@ -2553,7 +2608,7 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
                   value={ghPat}
                   onChange={(e) => {
                     setGhPat(e.target.value);
-                    try { localStorage.setItem('vbt_gh_pat', e.target.value); } catch {}
+                    setStoredPat(e.target.value);
                   }}
                   dir="ltr"
                   placeholder="ghp_… / github_pat_…"
@@ -2568,7 +2623,45 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
                   ساخت توکن ↗
                 </a>
               </div>
+              <p className="text-[10px] text-slate-500 leading-relaxed" dir="rtl">
+                پس از وارد کردن توکن یک‌بار، هر بار که «Save &amp; Sync All» را بزنید انتشار سراسری به‌صورت خودکار انجام می‌شود — دیگر نیازی به زدن دکمه جداگانه نیست.
+              </p>
             </div>
+
+            {/* Live publication diagnostics — what the deployed site actually serves */}
+            <div className="p-4 rounded-2xl bg-[#141624] border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-white" dir="rtl">وضعیت انتشار روی سایت لایو</span>
+                <button
+                  type="button"
+                  onClick={refreshPublishedState}
+                  className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] text-white font-semibold transition-colors"
+                >
+                  بررسی مجدد
+                </button>
+              </div>
+              <div className="space-y-1 text-[11px] font-mono" dir="ltr">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-400">tour-data.json</span>
+                  <span className={published?.tourData.exists ? 'text-emerald-400' : 'text-amber-400'}>
+                    {published ? (published.tourData.exists ? `published · ${published.tourData.propertyCount} properties` : 'not published') : 'checking…'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-400">admin-credential.json</span>
+                  <span className={published?.credential.exists ? 'text-emerald-400' : 'text-amber-400'}>
+                    {published ? (published.credential.exists ? `published · ${published.credential.email}` : 'not published') : 'checking…'}
+                  </span>
+                </div>
+                {published?.tourData.updatedAt && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400">last update</span>
+                    <span className="text-slate-300">{published.tourData.updatedAt}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <button
               type="button"
               disabled={isPublishing || !ghPat.trim()}
@@ -2576,11 +2669,60 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c5a880] to-[#8c6d46] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-60 transition-all shadow-md shadow-[#c5a880]/20"
             >
               <Cloud className="w-4 h-4" />
-              <span dir="rtl">{isPublishing ? 'در حال انتشار…' : 'انتشار تنظیمات + حساب مدیر روی گیت‌هاب'}</span>
+              <span dir="rtl">{isPublishing ? 'در حال انتشار…' : 'انتشار فوری تنظیمات + حساب مدیر'}</span>
             </button>
             <p className="text-[10px] text-slate-500 leading-relaxed" dir="rtl">
-              پس از انتشار، Actions سایت را می‌سازد (۱ تا ۲ دقیقه). سپس همه دستگاه‌ها و بازدیدکنندگان همان تنظیمات را می‌بینند و ورود مدیر روی هر دستگاه جدید با همان رمز ممکن است.
+              پس از انتشار، Actions سایت را می‌سازد (۱ تا ۲ دقیقه). سپس همه دستگاه‌ها و بازدیدکنندگان همان تنظیمات را می‌بینند و ورود مدیر روی هر دستگاه جدید با همان رمز ممکن می‌شود.
             </p>
+
+            {/* Tokenless fallback: download the exact files to commit manually */}
+            <div className="pt-1 border-t border-white/10 space-y-2">
+              <span className="text-[11px] text-slate-300 block" dir="rtl">یا بدون توکن: فایل‌های آماده را دانلود کنید و در پوشه <span className="font-mono">public/</span> مخزن کامیت کنید.</span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    StorageService.downloadTourDataFile(properties, config);
+                    refreshPublishedState();
+                  }}
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/20 transition-colors"
+                >
+                  دانلود tour-data.json
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cred = authService.getOwnerCredential();
+                    if (!cred) {
+                      showToast('ابتدا حساب مدیر را روی این دستگاه بسازید.');
+                      return;
+                    }
+                    const json = JSON.stringify({
+                      email: cred.email,
+                      salt: cred.salt,
+                      passwordHash: cred.passwordHash,
+                      recoveryHash: cred.recoveryHash,
+                      createdAt: cred.createdAt,
+                      hashVersion: cred.hashVersion,
+                      updatedAt: new Date().toISOString()
+                    }, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'admin-credential.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('admin-credential.json دانلود شد — آن را در public/ کامیت کنید.');
+                  }}
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/20 transition-colors"
+                >
+                  دانلود admin-credential.json
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>

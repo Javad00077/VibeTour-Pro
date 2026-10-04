@@ -269,8 +269,8 @@ export const authService = {
     if (!published) {
       return {
         success: false,
-        errorFa: 'حساب همگام‌شده‌ای منتشر نشده است. از دستگاه اصلی، در تب «ابزارها» گزینه «انتشار جهانی روی گیت‌هاب» را با فعال‌کردن همگام‌سازی حساب اجرا کنید.',
-        error: 'No published admin credential found — publish it from the main device (Tools → GitHub Publish).'
+        errorFa: 'حساب مدیر هنوز منتشر نشده است. روی «دستگاه اصلی» (همان دستگاهی که حساب را ساخته‌اید) وارد داشبورد شوید، به تب «ابزارها» بروید و یک‌بار «انتشار فوری تنظیمات + حساب مدیر» را بزنید (یا فایل admin-credential.json را دانلود و در پوشه public/ مخزن کامیت کنید). حدود ۲ دقیقه بعد، این صفحه با همان رمز کار می‌کند.',
+        error: 'No published admin credential found — on the MAIN device (the one where the account was created) open Dashboard → Tools → GitHub Publish and run it once (or commit public/admin-credential.json). Retry here ~2 minutes later.'
       };
     }
     if (!ADMIN_EMAILS.includes((published.email || '').toLowerCase())) {
