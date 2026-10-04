@@ -27,11 +27,11 @@
           "subtitleFa": "حرکت روی استخر بی‌نهایت به سمت نمای شیشه‌ای نورانی",
           "icon": "Compass",
           "startProgress": 0,
-          "endProgress": 0.24,
+          "endProgress": 0.17,
           "totalFrames": 72,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch01.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/Javad00077-patch-1/Exterior%20Approach%20&%20Heliport1.mp4",
           "thumbnailUrl": "video/posters/ch01.jpg",
           "ambientDescription": "The film opens at blue hour: the camera skims the mirror-calm infinity pool, the residence glowing in layered cove lighting beyond the water.",
           "ambientDescriptionFa": "فیلم در ساعت آبی آغاز می‌شود؛ دوربین روی آب آرام استخر بی‌نهایت سُر می‌خورد و عمارت با نورپردازی پنهان در آن‌سوی آب می‌درخشد.",
@@ -98,6 +98,85 @@
           ]
         },
         {
+          "id": "grand-salon",
+          "name": "Oceanfront Grand Salon",
+          "nameFa": "سالن بزرگ رو به اقیانوس",
+          "shortName": "04. Great Room",
+          "shortNameFa": "۰۴. سالن",
+          "subtitle": "Sunken lounge, fire tables and the concert piano beneath the ocean panorama",
+          "subtitleFa": "لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس",
+          "icon": "Tv",
+          "startProgress": 0.17,
+          "endProgress": 0.33,
+          "totalFrames": 63,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch04.jpg",
+          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/Javad00077-patch-1/Greatroom.mp4",
+          "thumbnailUrl": "video/posters/ch04.jpg",
+          "ambientDescription": "The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.",
+          "ambientDescriptionFa": "قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.",
+          "sqft": 2450,
+          "exposure": "Full West / Ocean Panorama",
+          "ceilingHeight": "16 Feet",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-fire-tables",
+              "x": 55,
+              "y": 62,
+              "frameRange": [
+                6,
+                60
+              ],
+              "title": "Sculptural Fire Tables",
+              "category": "Design",
+              "description": "Cast-stone fire tables anchor the conversation pits, mixing live flame with the cool palette of stone and linen.",
+              "spec": "Linear ethanol burners, remote modulated",
+              "priceTag": "$72,000"
+            },
+            {
+              "id": "hs-piano",
+              "x": 76,
+              "y": 55,
+              "frameRange": [
+                10,
+                63
+              ],
+              "title": "Concert Grand Piano",
+              "category": "Design",
+              "description": "A polished grand piano sits on the ocean axis — the salon doubles as an intimate recital hall at sunset.",
+              "spec": "Full-size concert grand, ivory finish",
+              "priceTag": "$190,000"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-salon-boucle",
+              "name": "Ivory Bouclé Lounge Seating",
+              "category": "Fabrics & Upholstery",
+              "origin": "Piedmont, Italy",
+              "finish": "Heavy loop weave, feather-wrapped",
+              "description": "Modular bouclé sofas wrap the fire pits in soft, tactile ivory — comfort engineered to the tune of 100,000 rubs.",
+              "swatchUrl": "video/posters/ch04.jpg",
+              "spec": "100,000 Martindale rubs",
+              "x": 35,
+              "y": 66
+            },
+            {
+              "id": "mat-salon-ceiling",
+              "name": "Battened Oak Ceiling",
+              "category": "Wood & Joinery",
+              "origin": "Fontainebleau, France",
+              "finish": "Smoked, ultra-matte",
+              "description": "Slim oak battens space the ceiling and conceal linear AC and acoustic damping above the salon.",
+              "swatchUrl": "video/posters/ch05.jpg",
+              "spec": "FSC oak, acoustic felt backing",
+              "x": 60,
+              "y": 28
+            }
+          ]
+        },
+        {
           "id": "facade-reveal",
           "name": "Glass Façade Reveal",
           "nameFa": "نمای شیشه‌ای و ورودی",
@@ -106,12 +185,12 @@
           "subtitle": "The full modern pavilion comes into frame across the reflecting water",
           "subtitleFa": "نمای کامل عمارت مدرن در قاب آب انعکاسی",
           "icon": "Sun",
-          "startProgress": 0.24,
-          "endProgress": 0.47,
+          "startProgress": 0.33,
+          "endProgress": 0.5,
           "totalFrames": 69,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch02.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/Javad00077-patch-1/Greatroom.mp4",
           "thumbnailUrl": "video/posters/ch02.jpg",
           "ambientDescription": "The approach widens: symmetrical pavilions, floating roof planes and the glass great room arrive together in one composed frame.",
           "ambientDescriptionFa": "زاویه باز می‌شود: پاویون‌های متقارن، سقف‌های شناور و گریت‌روم شیشه‌ای در یک قاب واحد ظاهر می‌شوند.",
@@ -185,12 +264,12 @@
           "subtitle": "Crossing the glass line into the warm ocean-view interior",
           "subtitleFa": "عبور از خط شیشه به فضای گرم داخل",
           "icon": "Flame",
-          "startProgress": 0.47,
-          "endProgress": 0.61,
+          "startProgress": 0.5,
+          "endProgress": 0.67,
           "totalFrames": 42,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch03.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://raw.githubusercontent.com/Javad00077/VibeTour-Pro/Javad00077-patch-1/Greatroom.mp4",
           "thumbnailUrl": "video/posters/ch03.jpg",
           "ambientDescription": "The cut lands inside the entry gallery: the same dusk sky now framed by the interior, water views pulling straight through the house.",
           "ambientDescriptionFa": "نما داخلی می‌شود: همان آسمان غروب حالا از داخل قاب شده و نمای آب مستقیم از یک‌سوی خانه به سوی دیگر ادامه دارد.",
@@ -231,85 +310,6 @@
           ]
         },
         {
-          "id": "grand-salon",
-          "name": "Oceanfront Grand Salon",
-          "nameFa": "سالن بزرگ رو به اقیانوس",
-          "shortName": "04. Great Room",
-          "shortNameFa": "۰۴. سالن",
-          "subtitle": "Sunken lounge, fire tables and the concert piano beneath the ocean panorama",
-          "subtitleFa": "لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس",
-          "icon": "Tv",
-          "startProgress": 0.61,
-          "endProgress": 0.82,
-          "totalFrames": 63,
-          "mediaType": "mp4",
-          "mediaUrl": "video/posters/ch04.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
-          "thumbnailUrl": "video/posters/ch04.jpg",
-          "ambientDescription": "The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.",
-          "ambientDescriptionFa": "قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.",
-          "sqft": 2450,
-          "exposure": "Full West / Ocean Panorama",
-          "ceilingHeight": "16 Feet",
-          "enablePauseGate": false,
-          "hotspots": [
-            {
-              "id": "hs-fire-tables",
-              "x": 55,
-              "y": 62,
-              "frameRange": [
-                6,
-                60
-              ],
-              "title": "Sculptural Fire Tables",
-              "category": "Design",
-              "description": "Cast-stone fire tables anchor the conversation pits, mixing live flame with the cool palette of stone and linen.",
-              "spec": "Linear ethanol burners, remote modulated",
-              "priceTag": "$72,000"
-            },
-            {
-              "id": "hs-piano",
-              "x": 76,
-              "y": 55,
-              "frameRange": [
-                10,
-                63
-              ],
-              "title": "Concert Grand Piano",
-              "category": "Design",
-              "description": "A polished grand piano sits on the ocean axis — the salon doubles as an intimate recital hall at sunset.",
-              "spec": "Full-size concert grand, ivory finish",
-              "priceTag": "$190,000"
-            }
-          ],
-          "materials": [
-            {
-              "id": "mat-salon-boucle",
-              "name": "Ivory Bouclé Lounge Seating",
-              "category": "Fabrics & Upholstery",
-              "origin": "Piedmont, Italy",
-              "finish": "Heavy loop weave, feather-wrapped",
-              "description": "Modular bouclé sofas wrap the fire pits in soft, tactile ivory — comfort engineered to the tune of 100,000 rubs.",
-              "swatchUrl": "video/posters/ch04.jpg",
-              "spec": "100,000 Martindale rubs",
-              "x": 35,
-              "y": 66
-            },
-            {
-              "id": "mat-salon-ceiling",
-              "name": "Battened Oak Ceiling",
-              "category": "Wood & Joinery",
-              "origin": "Fontainebleau, France",
-              "finish": "Smoked, ultra-matte",
-              "description": "Slim oak battens space the ceiling and conceal linear AC and acoustic damping above the salon.",
-              "swatchUrl": "video/posters/ch05.jpg",
-              "spec": "FSC oak, acoustic felt backing",
-              "x": 60,
-              "y": 28
-            }
-          ]
-        },
-        {
           "id": "salon-panorama",
           "name": "Sunset Panorama Wall",
           "nameFa": "پانورامای غروب",
@@ -318,8 +318,8 @@
           "subtitle": "The camera drifts along 18 meters of uninterrupted ocean glass",
           "subtitleFa": "دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند",
           "icon": "Sun",
-          "startProgress": 0.82,
-          "endProgress": 0.92,
+          "startProgress": 0.67,
+          "endProgress": 0.83,
           "totalFrames": 30,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch05.jpg",
@@ -371,7 +371,7 @@
           "subtitle": "Firelight, deep seating and the estate at its most cinematic hour",
           "subtitleFa": "نور آتش، نشیمن گرم و سینمایی‌ترین ساعت عمارت",
           "icon": "Flame",
-          "startProgress": 0.92,
+          "startProgress": 0.83,
           "endProgress": 1,
           "totalFrames": 24,
           "mediaType": "mp4",
@@ -440,11 +440,9 @@
     "liteSpeedSafe": true,
     "language": "en",
     "autoplaySpeed": 0.6,
-    "scrollSpeedFactor": 0.5,
+    "scrollSpeedFactor": 0.25,
     "cssPrefix": "vbt-t-",
     "glassBlur": 20
   },
-  "selectedPropertyId": "royal-palm-estate",
-  "activeRoomId": "twilight-approach",
-  "updatedAt": "2026-10-02T07:58:05.873Z"
+  "updatedAt": "2026-10-04T09:33:07.769Z"
 }
