@@ -45,6 +45,47 @@ const BASE_WHEEL_SENSITIVITY = 0.000085; // progress per deltaY pixel at 1.0x sp
 const LERP_RATE = 14;                    // progress chase rate (divided by scrubSmoothing)
 const AUTOPLAY_RATE = 0.02;              // progress per second at 1.0x autoplay speed
 
+/**
+ * Paint one decoded video frame onto the canvas, replicating CSS
+ * `object-fit: cover` (fill the viewport, crop the overflow, keep the
+ * aspect ratio). The <video> elements themselves are CSS-hidden
+ * (opacity 0) and stacked behind the canvas, so this call is what the
+ * visitor actually sees while scrolling.
+ *
+ * Returns false when the frame is not drawable yet, so the caller can
+ * fall back to the static poster instead of painting a black canvas.
+ */
+function drawVideoCover(
+  ctx: CanvasRenderingContext2D,
+  vid: HTMLVideoElement,
+  width: number,
+  height: number
+): boolean {
+  try {
+    if (vid.readyState < 2 || !vid.videoWidth || !vid.videoHeight) return false;
+    const videoAspect = vid.videoWidth / vid.videoHeight;
+    const canvasAspect = width / height;
+    let drawW = width;
+    let drawH = height;
+    let offsetX = 0;
+    let offsetY = 0;
+    if (canvasAspect > videoAspect) {
+      // Canvas is wider than the video → match the width, crop top/bottom
+      drawH = width / videoAspect;
+      offsetY = (height - drawH) / 2;
+    } else {
+      // Canvas is taller than the video → match the height, crop sides
+      drawW = height * videoAspect;
+      offsetX = (width - drawW) / 2;
+    }
+    ctx.drawImage(vid, offsetX, offsetY, drawW, drawH);
+    return true;
+  } catch {
+    // Tainted canvas or a not-yet-decodable frame — caller falls back to poster
+    return false;
+  }
+}
+
 export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   property,
   config,
@@ -688,7 +729,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               }
               if (!vid.error && videoLatchedRef.current.has('__master__')) {
                 ctx.clearRect(0, 0, width, height);
-                videoRendered = true;
+                // Paint the decoded frame onto the canvas (the <video> elements are
+                // CSS-hidden, so this drawImage IS what the visitor sees).
+                if (drawVideoCover(ctx, vid, width, height)) {
+                  videoRendered = true;
+                }
               }
             }
           } else if (hasVideo) {
@@ -733,7 +778,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               }
               if (videoLatchedRef.current.has(currRoom.id)) {
                 ctx.clearRect(0, 0, width, height);
-                videoRendered = true;
+                // Paint the decoded frame onto the canvas (the <video> elements are
+                // CSS-hidden, so this drawImage IS what the visitor sees).
+                if (drawVideoCover(ctx, vid, width, height)) {
+                  videoRendered = true;
+                }
               }
             }
           }
