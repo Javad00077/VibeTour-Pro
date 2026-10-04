@@ -50,7 +50,7 @@ import { PropertyListing, Room, PluginConfig, AdminUser, Hotspot, MaterialItem, 
 import { authService } from '../utils/authService';
 import { ensureAuth, auth } from '../firebase';
 import { isOwnerGoogleUser } from '../firebaseAuth';
-import { StorageService, getLastCloudSaveOutcome } from '../services/storageService';
+import { StorageService, getLastCloudSaveOutcome, getLastEditTimestamp } from '../services/storageService';
 import {
   getStoredPat,
   setStoredPat,
@@ -121,6 +121,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [cloudStatus, setCloudStatus] = useState<'checking' | 'cloud' | 'github' | 'local'>('checking');
   // What the live site currently serves (published tour data + credential)
   const [published, setPublished] = useState<PublishedProbe | null>(null);
+  // True when local edits are newer than what the live site serves — this is the
+  // exact condition that makes other devices/visitors show the wrong content.
+  const [pendingPublish, setPendingPublish] = useState<boolean>(false);
   // New-device sign-in (cross-device account restore): register / restore / recovery
   const [deviceLoginMode, setDeviceLoginMode] = useState<'register' | 'restore' | 'recovery'>('register');
   const [restorePassword, setRestorePassword] = useState<string>('');
@@ -393,6 +396,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       const probe = await probePublishedState();
       setPublished(probe);
+      const localStamp = getLastEditTimestamp();
+      // Pending = local edits newer than the published copy. This is precisely
+      // why other devices still show the old content.
+      const publishedStamp = probe.tourData.updatedAt || '';
+      setPendingPublish(!!localStamp && (!publishedStamp || localStamp > publishedStamp));
     } catch {
       // offline — keep the previous reading
     }
@@ -1027,30 +1035,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               refreshPublishedState();
             }}
             title={
-              cloudStatus === 'cloud'
-                ? 'انتشار ابری فعال است — تنظیمات در فایربیس منتشر می‌شود.'
-                : cloudStatus === 'github'
-                  ? 'انتشار سراسری از طریق گیت‌هاب فعال است — هر ذخیره، تنظیمات را برای همه منتشر می‌کند.'
-                  : 'هیچ کانال سراسری فعال نیست — تنظیمات فقط روی این دستگاه ذخیره می‌شود. برای فعال‌سازی، تب ابزارها را باز کنید و توکن گیت‌هاب را وارد کنید.'
+              pendingPublish
+                ? 'ویرایش‌های شما هنوز روی سایت منتشر نشده — دکمه «Save & Sync All» را بزنید تا همه دستگاه‌ها و بازدیدکنندگان آن را ببینند.'
+                : cloudStatus === 'cloud'
+                  ? 'انتشار ابری فعال است — تنظیمات در فایربیس منتشر می‌شود.'
+                  : cloudStatus === 'github'
+                    ? 'انتشار سراسری از طریق گیت‌هاب فعال است — هر ذخیره، تنظیمات را برای همه منتشر می‌کند.'
+                    : 'هیچ کانال سراسری فعال نیست — تنظیمات فقط روی این دستگاه ذخیره می‌شود. برای فعال‌سازی، تب ابزارها را باز کنید و توکن گیت‌هاب را وارد کنید.'
             }
             className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
-              cloudStatus === 'cloud'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                : cloudStatus === 'github'
-                  ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
-                  : cloudStatus === 'local'
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-                    : 'bg-white/5 border-white/10 text-slate-400'
+              pendingPublish
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25'
+                : cloudStatus === 'cloud'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : cloudStatus === 'github'
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                    : cloudStatus === 'local'
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                      : 'bg-white/5 border-white/10 text-slate-400'
             }`}
           >
             <span className={`w-2 h-2 rounded-full ${
-              cloudStatus === 'cloud' ? 'bg-emerald-400 animate-pulse'
+              pendingPublish ? 'bg-amber-400 animate-ping'
+                : cloudStatus === 'cloud' ? 'bg-emerald-400 animate-pulse'
                 : cloudStatus === 'github' ? 'bg-cyan-400 animate-pulse'
                 : cloudStatus === 'local' ? 'bg-amber-400'
                 : 'bg-slate-400 animate-pulse'
             }`} />
             <span className="font-mono text-[11px]">
-              {cloudStatus === 'cloud' ? 'Cloud: Online'
+              {pendingPublish ? 'Publish Pending'
+                : cloudStatus === 'cloud' ? 'Cloud: Online'
                 : cloudStatus === 'github' ? 'Sync: GitHub'
                 : cloudStatus === 'local' ? 'Sync: Local Only'
                 : 'Sync: …'}
@@ -2684,29 +2698,24 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
               پس از انتشار، Actions سایت را می‌سازد (۱ تا ۲ دقیقه). سپس همه دستگاه‌ها و بازدیدکنندگان همان تنظیمات را می‌بینند و ورود مدیر روی هر دستگاه جدید با همان رمز ممکن می‌شود.
             </p>
 
-            {/* Tokenless fallback: download the exact files to commit manually */}
+            {/* Tokenless fallback: copy or download the exact files to commit manually */}
             <div className="pt-1 border-t border-white/10 space-y-2">
-              <span className="text-[11px] text-slate-300 block" dir="rtl">یا بدون توکن: فایل‌های آماده را دانلود کنید و در پوشه <span className="font-mono">public/</span> مخزن کامیت کنید.</span>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    StorageService.downloadTourDataFile(properties, config);
-                    refreshPublishedState();
-                  }}
-                  className="flex-1 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/20 transition-colors"
-                >
-                  دانلود tour-data.json
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const cred = authService.getOwnerCredential();
-                    if (!cred) {
-                      showToast('ابتدا حساب مدیر را روی این دستگاه بسازید.');
-                      return;
+              <span className="text-[11px] text-slate-300 block" dir="rtl">یا بدون توکن: محتوای فایل‌ها را کپی یا دانلود کنید تا در پوشه <span className="font-mono">public/</span> مخزن کامیت شود.</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {(['tour-data.json', 'admin-credential.json'] as const).map((file) => {
+                  const buildContent = (): string | null => {
+                    if (file === 'tour-data.json') {
+                      return JSON.stringify({
+                        properties,
+                        config,
+                        selectedPropertyId: currentProperty.id,
+                        activeRoomId: selectedRoomId,
+                        updatedAt: new Date().toISOString()
+                      }, null, 2);
                     }
-                    const json = JSON.stringify({
+                    const cred = authService.getOwnerCredential();
+                    if (!cred) return null;
+                    return JSON.stringify({
                       email: cred.email,
                       salt: cred.salt,
                       passwordHash: cred.passwordHash,
@@ -2715,21 +2724,61 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
                       hashVersion: cred.hashVersion,
                       updatedAt: new Date().toISOString()
                     }, null, 2);
-                    const blob = new Blob([json], { type: 'application/json' });
+                  };
+                  const download = (content: string) => {
+                    const blob = new Blob([content], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'admin-credential.json';
+                    a.download = file;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    showToast('admin-credential.json دانلود شد — آن را در public/ کامیت کنید.');
-                  }}
-                  className="flex-1 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/20 transition-colors"
-                >
-                  دانلود admin-credential.json
-                </button>
+                  };
+                  return (
+                    <div key={file} className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-black/25 border border-white/10">
+                      <span className="font-mono text-[10px] text-[#c5a880]">{file}</span>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const content = buildContent();
+                            if (!content) {
+                              showToast('ابتدا حساب مدیر را روی این دستگاه بسازید.');
+                              return;
+                            }
+                            try {
+                              await navigator.clipboard.writeText(content);
+                              showToast(`${file} کپی شد — محتوا را در public/ کامیت کنید.`);
+                            } catch {
+                              showToast('کپی ناموفق بود — از دکمه دانلود استفاده کنید.');
+                            }
+                          }}
+                          className="flex-1 px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-semibold transition-colors"
+                        >
+                          کپی JSON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const content = buildContent();
+                            if (!content) {
+                              showToast('ابتدا حساب مدیر را روی این دستگاه بسازید.');
+                              return;
+                            }
+                            download(content);
+                            showToast(`${file} دانلود شد.`);
+                            refreshPublishedState();
+                          }}
+                          className="flex-1 px-2 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-semibold transition-colors"
+                        >
+                          دانلود
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
