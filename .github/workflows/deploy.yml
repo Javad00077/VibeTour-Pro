@@ -39,12 +39,6 @@ jobs:
       - name: Build Application
         run: npm run build
 
-      - name: github-pages
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
       # Method 1: Push built dist to gh-pages branch (works with Classic 'Deploy from a branch' -> gh-pages)
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
