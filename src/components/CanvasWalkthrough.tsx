@@ -798,6 +798,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           if (!videoRendered && !videoHeldFrame) {
             // 2. STATIC POSTER (only while a video buffers or when a room has none) —
             // drawn flat, no zoom / pan / fake camera effects
+            // Debug telemetry: count poster paints after a video latch (must stay 0)
+            if (videoLatchedRef.current.has(currRoom.id) || videoLatchedRef.current.has('__master__')) {
+              const w = window as unknown as { __vbtPosterAfterLatch?: number };
+              w.__vbtPosterAfterLatch = (w.__vbtPosterAfterLatch || 0) + 1;
+            }
             let img = imageCacheRef.current.get(currRoom.id);
             if (!img && currRoom.mediaUrl) {
               img = new Image();
