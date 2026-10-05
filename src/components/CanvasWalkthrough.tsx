@@ -30,6 +30,7 @@ import {
 import { PropertyListing, Room, Hotspot, MaterialItem, PluginConfig } from '../types';
 import { soundEngine } from '../utils/audioSynth';
 import { analyzeAndConvertVideoUrl } from '../utils/videoUrlHelper';
+import { decideScrub } from '../utils/scrubEngine';
 
 interface CanvasWalkthroughProps {
   property: PropertyListing;
@@ -44,11 +45,6 @@ interface CanvasWalkthroughProps {
 const BASE_WHEEL_SENSITIVITY = 0.000085; // progress per deltaY pixel at 1.0x speed
 const LERP_RATE = 14;                    // progress chase rate (divided by scrubSmoothing)
 const AUTOPLAY_RATE = 0.02;              // progress per second at 1.0x autoplay speed
-// Smooth-scrub tuning: a clip ahead of the scroll position is frozen outright,
-// and a rate under the floor is not worth decoding — both keep the displayed
-// frame within a fraction of a frame of the visitor's position.
-const PLAY_RATE_FLOOR = 0.05;
-const FRAME_TOLERANCE = 0.03;
 
 /**
  * Paint one decoded video frame onto the canvas, replicating CSS
@@ -617,8 +613,6 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   // ------------------------------------------------------------------
   const steerVideo = useCallback(
     (vid: HTMLVideoElement, key: string, targetTime: number, dt: number, dur: number) => {
-      const clampTime = (t: number) => Math.max(0, Math.min(dur - 0.033, t));
-
       // Track the target velocity every frame (also right after hard seeks)
       const prev = lastTargetTimeMapRef.current.get(key) ?? targetTime;
       lastTargetTimeMapRef.current.set(key, targetTime);
@@ -632,64 +626,53 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       }
       const pending = pendingSeekMapRef.current.get(key);
       pendingSeekMapRef.current.delete(key);
-      const wanted = pending !== undefined ? pending : targetTime;
-      const error = wanted - vid.currentTime;
 
-      // Hard-seek window: steering covers small gaps smoothly; anything beyond
-      // it (fling / chapter jump / reverse past tolerance) snaps once, then the
-      // steering loop takes over again. Retries are throttled to 4/s per clip,
-      // except a rescue seek when the clip is far ahead — that is the case that
-      // otherwise accumulates lag on fast backward scrolls.
-      const fwdHard = Math.min(1.5, Math.max(0.3, dur * 0.02));
-      const backHard = Math.min(0.5, Math.max(0.2, dur * 0.008));
       const now = performance.now();
-      const lastHardSeek = hardSeekAtRef.current.get(key) ?? 0;
-      if (error < -backHard || error > fwdHard) {
-        if (now - lastHardSeek > 250 || error < -backHard * 3) {
+      const action = decideScrub({
+        targetTime: pending !== undefined ? pending : targetTime,
+        currentTime: vid.currentTime,
+        duration: dur,
+        velocity: dt > 0 ? (targetTime - prev) / dt : 0,
+        lastHardSeekAt: hardSeekAtRef.current.get(key) ?? 0,
+        now
+      });
+
+      switch (action.kind) {
+        case 'seek':
           hardSeekAtRef.current.set(key, now);
           lastSeekTimeRef.current = now;
-          const w = window as unknown as { __vbtHardSeeks?: number };
-          w.__vbtHardSeeks = (w.__vbtHardSeeks || 0) + 1;
+          {
+            const w = window as unknown as { __vbtHardSeeks?: number };
+            w.__vbtHardSeeks = (w.__vbtHardSeeks || 0) + 1;
+          }
           try {
-            vid.currentTime = clampTime(wanted);
+            vid.currentTime = action.time;
           } catch {
             // seek race — retried on the next frame
           }
-        }
-        return;
-      }
-
-      const vel = dt > 0 ? (targetTime - prev) / dt : 0;
-
-      if (error < -FRAME_TOLERANCE) {
-        // AHEAD of the visitor: reverse playback does not exist, so freeze the
-        // current frame. Playing forward here is what used to drift the clip
-        // ahead and stall backward scrolling.
-        if (!vid.paused) vid.pause();
-        return;
-      }
-
-      // Feed-forward: the scrub velocity (video-seconds per real second)
-      // Proportional correction folds the residual gap into the rate. No floor:
-      // a rate below PLAY_RATE_FLOOR is not worth decoding, so we hold instead.
-      const rate = Math.max(0, Math.min(4, vel + error * 2.0));
-
-      if (rate < PLAY_RATE_FLOOR) {
-        // Aligned with the target (or idle): hold the decoded frame — the canvas
-        // keeps painting it, so there is no poster flash and no drift.
-        if (!vid.paused) vid.pause();
-      } else {
-        const w = window as unknown as { __vbtSteerFrames?: number };
-        w.__vbtSteerFrames = (w.__vbtSteerFrames || 0) + 1;
-        if (vid.paused) {
-          vid.play().catch(() => {
-            // Gesture-policy rejection (rare for muted clips): the hard-seek
-            // path above still keeps the tour usable on the following frames
-          });
-        }
-        if (Math.abs(vid.playbackRate - rate) > 0.02) {
-          try { vid.playbackRate = rate; } catch {}
-        }
+          break;
+        case 'play':
+          {
+            const w = window as unknown as { __vbtSteerFrames?: number };
+            w.__vbtSteerFrames = (w.__vbtSteerFrames || 0) + 1;
+          }
+          if (vid.paused) {
+            vid.play().catch(() => {
+              // Gesture-policy rejection (rare for muted clips): the hard-seek
+              // path above still keeps the tour usable on the following frames
+            });
+          }
+          if (Math.abs(vid.playbackRate - action.rate) > 0.02) {
+            try { vid.playbackRate = action.rate; } catch {}
+          }
+          break;
+        case 'hold':
+          // Hold the decoded frame — the canvas keeps painting it, so there is
+          // no poster flash, no drift ahead, and no wasted decode work.
+          if (!vid.paused) vid.pause();
+          break;
+        default:
+          break;
       }
     },
     []
