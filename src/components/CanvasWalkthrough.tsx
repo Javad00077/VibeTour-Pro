@@ -668,6 +668,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           // Shared mode scrubs by the ACTIVE CHAPTER's local progress so the film
           // restarts from its first frame in every section of the house.
           let videoRendered = false;
+          // Latched but THIS frame is not drawable (seek stall / readyState dip on
+          // cross-origin streams). The canvas keeps its previous content — the last
+          // decoded frame — so the poster NEVER interleaves mid-session. This is the
+          // fix for the reported one-frame-video / one-frame-poster flicker.
+          let videoHeldFrame = false;
           const hasVideo = !!currRoom.videoUrl && !currRoom.videoUrl.startsWith('blob:') && analyzeAndConvertVideoUrl(currRoom.videoUrl).candidates.length > 0;
           const sharedMaster = allRoomsShareVideo ? masterVideoRef.current : null;
           // Adaptive seek threshold: frame-accurate for same-origin/local sources,
@@ -728,11 +733,13 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 videoLatchedRef.current.add('__master__');
               }
               if (!vid.error && videoLatchedRef.current.has('__master__')) {
-                ctx.clearRect(0, 0, width, height);
-                // Paint the decoded frame onto the canvas (the <video> elements are
-                // CSS-hidden, so this drawImage IS what the visitor sees).
+                // No clearRect: drawVideoCover fills the whole viewport (cover
+                // geometry), and skipping the clear means an undrawable frame
+                // simply holds the previous frame instead of flashing the poster.
                 if (drawVideoCover(ctx, vid, width, height)) {
                   videoRendered = true;
+                } else {
+                  videoHeldFrame = true;
                 }
               }
             }
@@ -777,17 +784,18 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 videoLatchedRef.current.add(currRoom.id);
               }
               if (videoLatchedRef.current.has(currRoom.id)) {
-                ctx.clearRect(0, 0, width, height);
-                // Paint the decoded frame onto the canvas (the <video> elements are
-                // CSS-hidden, so this drawImage IS what the visitor sees).
+                // No clearRect (same reason as shared mode): hold the last decoded
+                // frame whenever this frame is briefly undrawable — no poster flash.
                 if (drawVideoCover(ctx, vid, width, height)) {
                   videoRendered = true;
+                } else {
+                  videoHeldFrame = true;
                 }
               }
             }
           }
 
-          if (!videoRendered) {
+          if (!videoRendered && !videoHeldFrame) {
             // 2. STATIC POSTER (only while a video buffers or when a room has none) —
             // drawn flat, no zoom / pan / fake camera effects
             let img = imageCacheRef.current.get(currRoom.id);
