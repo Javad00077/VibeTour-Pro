@@ -123,6 +123,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   // used as the feed-forward velocity of the smooth-scrub engine.
   const pendingSeekMapRef = useRef<Map<string, number>>(new Map());
   const lastTargetTimeMapRef = useRef<Map<string, number>>(new Map());
+  // Timestamp of the last hard seek per clip — throttles seek retries so a
+  // fast fling cannot storm the network with back-to-back range requests
+  const hardSeekAtRef = useRef<Map<string, number>>(new Map());
   // Sticky latch: once a clip has delivered its first decodable frame we never
   // fall back to the poster mid-session (prevents poster/video flicker = "jumps")
   const videoLatchedRef = useRef<Set<string>>(new Set());
@@ -610,8 +613,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       const prev = lastTargetTimeMapRef.current.get(key) ?? targetTime;
       lastTargetTimeMapRef.current.set(key, targetTime);
 
-      // While the decoder is busy, keep only the newest request (coalescing)
-      if (vid.seeking) {
+      // While the decoder is busy OR still fetching data for the current
+      // position, keep only the newest request — issuing another seek now
+      // would cancel the in-flight range request and thrash the network.
+      if (vid.seeking || vid.readyState < 3) {
         pendingSeekMapRef.current.set(key, targetTime);
         return;
       }
@@ -622,17 +627,22 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
       // Hard-seek window: steering covers small gaps smoothly; anything beyond
       // it (fling / chapter jump / reverse past tolerance) snaps once, then the
-      // steering loop takes over again.
+      // steering loop takes over again. Retries are throttled to 4/s per clip.
       const fwdHard = Math.min(1.5, Math.max(0.3, dur * 0.02));
       const backHard = Math.min(0.9, Math.max(0.25, dur * 0.01));
+      const now = performance.now();
+      const lastHardSeek = hardSeekAtRef.current.get(key) ?? 0;
       if (error < -backHard || error > fwdHard) {
-        lastSeekTimeRef.current = performance.now();
-        const w = window as unknown as { __vbtHardSeeks?: number };
-        w.__vbtHardSeeks = (w.__vbtHardSeeks || 0) + 1;
-        try {
-          vid.currentTime = clampTime(wanted);
-        } catch {
-          // seek race — retried on the next frame
+        if (now - lastHardSeek > 250) {
+          hardSeekAtRef.current.set(key, now);
+          lastSeekTimeRef.current = now;
+          const w = window as unknown as { __vbtHardSeeks?: number };
+          w.__vbtHardSeeks = (w.__vbtHardSeeks || 0) + 1;
+          try {
+            vid.currentTime = clampTime(wanted);
+          } catch {
+            // seek race — retried on the next frame
+          }
         }
         return;
       }
@@ -744,6 +754,16 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
           const roomRange = Math.max(0.01, currRoom.endProgress - currRoom.startProgress);
           const localProg = Math.max(0, Math.min(1, (currentProg - currRoom.startProgress) / roomRange));
+
+          // Free the decoder + network for the ACTIVE clip: pause every other
+          // chamber's clip (steering leaves them playing after a room change;
+          // concurrent decoders/range requests = stutter). Shared mode has a
+          // single element, nothing to clean up.
+          if (!allRoomsShareVideo) {
+            roomVideoRefs.current.forEach((other, id) => {
+              if (id !== currRoom.id && !other.paused) other.pause();
+            });
+          }
 
           // 1. VIDEO SCRUBBING — shared master film (single decoder) or per-chamber clips.
           // Shared mode scrubs by the ACTIVE CHAPTER's local progress so the film
