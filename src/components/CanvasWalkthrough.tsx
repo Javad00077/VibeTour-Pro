@@ -44,6 +44,11 @@ interface CanvasWalkthroughProps {
 const BASE_WHEEL_SENSITIVITY = 0.000085; // progress per deltaY pixel at 1.0x speed
 const LERP_RATE = 14;                    // progress chase rate (divided by scrubSmoothing)
 const AUTOPLAY_RATE = 0.02;              // progress per second at 1.0x autoplay speed
+// Smooth-scrub tuning: a clip ahead of the scroll position is frozen outright,
+// and a rate under the floor is not worth decoding — both keep the displayed
+// frame within a fraction of a frame of the visitor's position.
+const PLAY_RATE_FLOOR = 0.05;
+const FRAME_TOLERANCE = 0.03;
 
 /**
  * Paint one decoded video frame onto the canvas, replicating CSS
@@ -597,13 +602,18 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   // ------------------------------------------------------------------
   // SMOOTH-SCRUB ENGINE: pausing the clip and jumping `currentTime` only
   // shows ONE new frame per network seek — the "chunky scroll" report.
-  // Instead, while the visitor scrubs, the clip is PLAYED and steered with
-  // `playbackRate` (feed-forward scroll velocity + gentle proportional
-  // error correction), so the decoder emits consecutive frames at its
-  // native rate and the motion is fluid. Hard seeks are reserved for gaps
-  // beyond the steer range (fast flings, chapter jumps) and for backwards
-  // scrolls (browsers cannot play in reverse). When the tour is idle the
-  // clip pauses and the canvas holds the last decoded frame (no flicker).
+  // Instead, while the visitor scrubs FORWARD, the clip is PLAYED and
+  // steered with `playbackRate` (feed-forward scroll velocity + gentle
+  // proportional error correction), so the decoder emits consecutive
+  // frames at its native rate and the motion is fluid.
+  //
+  // Forward-only by construction: the clip must NEVER run past the scroll
+  // position. HTML video cannot play in reverse, so the moment the frame
+  // sits ahead of the target we FREEZE it (and seek back only when the
+  // gap grows past a tolerance). Flooring the rate instead — which an
+  // earlier revision did — made the clip creep ahead on its own while the
+  // visitor was idle, and every backward scroll then had to pay that debt
+  // back with seeks, which showed up as lag.
   // ------------------------------------------------------------------
   const steerVideo = useCallback(
     (vid: HTMLVideoElement, key: string, targetTime: number, dt: number, dur: number) => {
@@ -627,13 +637,15 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
       // Hard-seek window: steering covers small gaps smoothly; anything beyond
       // it (fling / chapter jump / reverse past tolerance) snaps once, then the
-      // steering loop takes over again. Retries are throttled to 4/s per clip.
+      // steering loop takes over again. Retries are throttled to 4/s per clip,
+      // except a rescue seek when the clip is far ahead — that is the case that
+      // otherwise accumulates lag on fast backward scrolls.
       const fwdHard = Math.min(1.5, Math.max(0.3, dur * 0.02));
-      const backHard = Math.min(0.9, Math.max(0.25, dur * 0.01));
+      const backHard = Math.min(0.5, Math.max(0.2, dur * 0.008));
       const now = performance.now();
       const lastHardSeek = hardSeekAtRef.current.get(key) ?? 0;
       if (error < -backHard || error > fwdHard) {
-        if (now - lastHardSeek > 250) {
+        if (now - lastHardSeek > 250 || error < -backHard * 3) {
           hardSeekAtRef.current.set(key, now);
           lastSeekTimeRef.current = now;
           const w = window as unknown as { __vbtHardSeeks?: number };
@@ -647,13 +659,24 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         return;
       }
 
-      // Feed-forward: the scrub velocity (video-seconds per real second)
       const vel = dt > 0 ? (targetTime - prev) / dt : 0;
-      // Proportional correction folds the residual gap into the rate
-      const rate = Math.max(0.0625, Math.min(4, vel + error * 2.0));
 
-      if (rate < 0.05) {
-        // Idle: pause — the canvas keeps holding the last decoded frame
+      if (error < -FRAME_TOLERANCE) {
+        // AHEAD of the visitor: reverse playback does not exist, so freeze the
+        // current frame. Playing forward here is what used to drift the clip
+        // ahead and stall backward scrolling.
+        if (!vid.paused) vid.pause();
+        return;
+      }
+
+      // Feed-forward: the scrub velocity (video-seconds per real second)
+      // Proportional correction folds the residual gap into the rate. No floor:
+      // a rate below PLAY_RATE_FLOOR is not worth decoding, so we hold instead.
+      const rate = Math.max(0, Math.min(4, vel + error * 2.0));
+
+      if (rate < PLAY_RATE_FLOOR) {
+        // Aligned with the target (or idle): hold the decoded frame — the canvas
+        // keeps painting it, so there is no poster flash and no drift.
         if (!vid.paused) vid.pause();
       } else {
         const w = window as unknown as { __vbtSteerFrames?: number };
