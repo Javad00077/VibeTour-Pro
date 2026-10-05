@@ -118,7 +118,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(performance.now());
   const lastSeekTimeRef = useRef<number>(0);
-  const pendingSeekRef = useRef<number | null>(null); // latest requested seek time while decoder busy
+  // Per-clip scrub state (keyed by room.id or '__master__'): the newest seek
+  // requested while the decoder is busy, and the previous frame's target time
+  // used as the feed-forward velocity of the smooth-scrub engine.
+  const pendingSeekMapRef = useRef<Map<string, number>>(new Map());
+  const lastTargetTimeMapRef = useRef<Map<string, number>>(new Map());
   // Sticky latch: once a clip has delivered its first decodable frame we never
   // fall back to the poster mid-session (prevents poster/video flicker = "jumps")
   const videoLatchedRef = useRef<Set<string>>(new Set());
@@ -250,8 +254,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         vid.dataset.candidateIdx = '0';
         resolvedCandidatesRef.current.set('__master__', candidates);
         // URL changed → drop the sticky latch so the poster shows until the
-        // new source delivers its first decodable frame
+        // new source delivers its first decodable frame, and reset the
+        // smooth-scrub state so the steering loop starts clean
         videoLatchedRef.current.delete('__master__');
+        pendingSeekMapRef.current.delete('__master__');
+        lastTargetTimeMapRef.current.delete('__master__');
         installCandidateFallback(vid, '__master__');
         vid.src = resolved;
         vid.load();
@@ -274,8 +281,11 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       resolvedCandidatesRef.current.set(room.id, candidates);
       el.dataset.currentStreamUrl = resolved;
       el.dataset.candidateIdx = '0';
-      // Edited URL → reset the latch so the new clip latches cleanly
+      // Edited URL → reset the latch so the new clip latches cleanly, and
+      // reset the smooth-scrub state for the same reason
       videoLatchedRef.current.delete(room.id);
+      pendingSeekMapRef.current.delete(room.id);
+      lastTargetTimeMapRef.current.delete(room.id);
       installCandidateFallback(el, room.id);
       el.src = resolved;
       el.load();
@@ -581,6 +591,77 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     };
   }, [enableGates, getRoomByProgress, unlockMobileVideo]);
 
+  // ------------------------------------------------------------------
+  // SMOOTH-SCRUB ENGINE: pausing the clip and jumping `currentTime` only
+  // shows ONE new frame per network seek — the "chunky scroll" report.
+  // Instead, while the visitor scrubs, the clip is PLAYED and steered with
+  // `playbackRate` (feed-forward scroll velocity + gentle proportional
+  // error correction), so the decoder emits consecutive frames at its
+  // native rate and the motion is fluid. Hard seeks are reserved for gaps
+  // beyond the steer range (fast flings, chapter jumps) and for backwards
+  // scrolls (browsers cannot play in reverse). When the tour is idle the
+  // clip pauses and the canvas holds the last decoded frame (no flicker).
+  // ------------------------------------------------------------------
+  const steerVideo = useCallback(
+    (vid: HTMLVideoElement, key: string, targetTime: number, dt: number, dur: number) => {
+      const clampTime = (t: number) => Math.max(0, Math.min(dur - 0.033, t));
+
+      // Track the target velocity every frame (also right after hard seeks)
+      const prev = lastTargetTimeMapRef.current.get(key) ?? targetTime;
+      lastTargetTimeMapRef.current.set(key, targetTime);
+
+      // While the decoder is busy, keep only the newest request (coalescing)
+      if (vid.seeking) {
+        pendingSeekMapRef.current.set(key, targetTime);
+        return;
+      }
+      const pending = pendingSeekMapRef.current.get(key);
+      pendingSeekMapRef.current.delete(key);
+      const wanted = pending !== undefined ? pending : targetTime;
+      const error = wanted - vid.currentTime;
+
+      // Hard-seek window: steering covers small gaps smoothly; anything beyond
+      // it (fling / chapter jump / reverse past tolerance) snaps once, then the
+      // steering loop takes over again.
+      const fwdHard = Math.min(1.5, Math.max(0.3, dur * 0.02));
+      const backHard = Math.min(0.9, Math.max(0.25, dur * 0.01));
+      if (error < -backHard || error > fwdHard) {
+        lastSeekTimeRef.current = performance.now();
+        const w = window as unknown as { __vbtHardSeeks?: number };
+        w.__vbtHardSeeks = (w.__vbtHardSeeks || 0) + 1;
+        try {
+          vid.currentTime = clampTime(wanted);
+        } catch {
+          // seek race — retried on the next frame
+        }
+        return;
+      }
+
+      // Feed-forward: the scrub velocity (video-seconds per real second)
+      const vel = dt > 0 ? (targetTime - prev) / dt : 0;
+      // Proportional correction folds the residual gap into the rate
+      const rate = Math.max(0.0625, Math.min(4, vel + error * 2.0));
+
+      if (rate < 0.05) {
+        // Idle: pause — the canvas keeps holding the last decoded frame
+        if (!vid.paused) vid.pause();
+      } else {
+        const w = window as unknown as { __vbtSteerFrames?: number };
+        w.__vbtSteerFrames = (w.__vbtSteerFrames || 0) + 1;
+        if (vid.paused) {
+          vid.play().catch(() => {
+            // Gesture-policy rejection (rare for muted clips): the hard-seek
+            // path above still keeps the tour usable on the following frames
+          });
+        }
+        if (Math.abs(vid.playbackRate - rate) > 0.02) {
+          try { vid.playbackRate = rate; } catch {}
+        }
+      }
+    },
+    []
+  );
+
   // Main 60FPS Render Loop
   useEffect(() => {
     let frameCount = 0;
@@ -690,7 +771,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
             if (!vid.error) {
               const dur = Number.isFinite(vid.duration) ? vid.duration : 0;
 
-              // Play/pause follows the transport state; during playback the video's
+              // Play/pause follows the transport state; during autoplay the video's
               // own clock drives the frames (playbackRate mapped to progress rate)
               if (isPlayingRef.current) {
                 if (vid.paused) {
@@ -700,31 +781,33 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 if (Math.abs(vid.playbackRate - filmRate) > 0.01) {
                   try { vid.playbackRate = filmRate; } catch {}
                 }
-              } else if (!vid.paused) {
-                vid.pause();
-              }
 
-              if (dur > 0) {
-                const targetTime = Math.max(0, Math.min(dur - 0.033, localProg * dur));
-
-                // Seek coalescing: while the decoder is busy seeking, remember only the
-                // newest requested time and apply it the moment the decoder frees up.
-                // This removes the stutter caused by queued/competing seeks.
-                if (vid.seeking) {
-                  pendingSeekRef.current = targetTime;
-                } else {
-                  const wanted = pendingSeekRef.current !== null ? pendingSeekRef.current : targetTime;
-                  pendingSeekRef.current = null;
-                  const drift = Math.abs(vid.currentTime - wanted);
-                  if (drift > seekDriftThreshold(vid)) {
-                    lastSeekTimeRef.current = performance.now();
-                    try {
-                      vid.currentTime = Math.max(0, Math.min(dur - 0.033, wanted));
-                    } catch {
-                      // seek race — retried on the next frame
+                if (dur > 0) {
+                  // Keep autoplay on rails (keyed seek coalescing)
+                  const targetTime = Math.max(0, Math.min(dur - 0.033, localProg * dur));
+                  if (vid.seeking) {
+                    pendingSeekMapRef.current.set('__master__', targetTime);
+                  } else {
+                    const pending = pendingSeekMapRef.current.get('__master__');
+                    pendingSeekMapRef.current.delete('__master__');
+                    const wanted = pending !== undefined ? pending : targetTime;
+                    if (Math.abs(vid.currentTime - wanted) > seekDriftThreshold(vid)) {
+                      lastSeekTimeRef.current = performance.now();
+                      try {
+                        vid.currentTime = Math.max(0, Math.min(dur - 0.033, wanted));
+                      } catch {
+                        // seek race — retried on the next frame
+                      }
                     }
                   }
                 }
+              } else if (dur > 0) {
+                // Manual scrub: play the clip and steer it with playbackRate so
+                // the decoder emits consecutive frames — fluid, no seek jumps
+                const targetTime = Math.max(0, Math.min(dur - 0.033, localProg * dur));
+                steerVideo(vid, '__master__', targetTime, dt, dur);
+              } else if (!vid.paused) {
+                vid.pause();
               }
 
               // Show the video layer once a frame is decodable and KEEP it shown
@@ -748,33 +831,40 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
             if (vid && !vid.error) {
               const scrubProgress = localProg;
 
-              if (vid.duration && Number.isFinite(vid.duration)) {
-                const targetTime = Math.max(0, Math.min(vid.duration - 0.033, scrubProgress * vid.duration));
-
-                // Seek coalescing (same pattern as shared mode): while the decoder is
-                // busy, remember only the newest requested time and apply it the
-                // instant the decoder frees — kills stutter from competing seeks.
-                if (vid.seeking) {
-                  pendingSeekRef.current = targetTime;
-                } else {
-                  const wanted = pendingSeekRef.current !== null ? pendingSeekRef.current : targetTime;
-                  pendingSeekRef.current = null;
-                  if (Math.abs(vid.currentTime - wanted) > seekDriftThreshold(vid)) {
-                    lastSeekTimeRef.current = performance.now();
-                    try {
-                      vid.currentTime = Math.max(0, Math.min(vid.duration - 0.033, wanted));
-                    } catch {
-                      // seek race — retried next frame
-                    }
-                  }
-                }
-              }
-
-              // Play/pause follows the transport state for the ACTIVE clip too
               if (isPlayingRef.current) {
+                // Autoplay: rate-map the clip to the tour speed (same as shared
+                // mode) so its own clock drives frames instead of jerky seeks
+                const dur = Number.isFinite(vid.duration) ? vid.duration : 0;
                 if (vid.paused) {
                   vid.play().catch(() => {});
                 }
+                if (dur > 0) {
+                  const filmRate = Math.max(0.0625, Math.min(4, AUTOPLAY_RATE * (config.autoplaySpeed || 1) * dur));
+                  if (Math.abs(vid.playbackRate - filmRate) > 0.01) {
+                    try { vid.playbackRate = filmRate; } catch {}
+                  }
+                  const targetTime = Math.max(0, Math.min(dur - 0.033, scrubProgress * dur));
+                  if (vid.seeking) {
+                    pendingSeekMapRef.current.set(currRoom.id, targetTime);
+                  } else {
+                    const pending = pendingSeekMapRef.current.get(currRoom.id);
+                    pendingSeekMapRef.current.delete(currRoom.id);
+                    const wanted = pending !== undefined ? pending : targetTime;
+                    if (Math.abs(vid.currentTime - wanted) > seekDriftThreshold(vid)) {
+                      lastSeekTimeRef.current = performance.now();
+                      try {
+                        vid.currentTime = Math.max(0, Math.min(dur - 0.033, wanted));
+                      } catch {
+                        // seek race — retried next frame
+                      }
+                    }
+                  }
+                }
+              } else if (vid.duration && Number.isFinite(vid.duration)) {
+                // Manual scrub: play the clip and steer it with playbackRate —
+                // consecutive decoded frames = fluid motion (no per-seek jumps)
+                const targetTime = Math.max(0, Math.min(vid.duration - 0.033, scrubProgress * vid.duration));
+                steerVideo(vid, currRoom.id, targetTime, dt, vid.duration);
               } else if (!vid.paused) {
                 vid.pause();
               }
