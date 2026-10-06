@@ -1294,7 +1294,7 @@
     "enableWorkerPool": true,
     "enableReturnMatrix": true,
     "defaultFullscreen": false,
-    "enableGlobalCheckpointGates": false,
+    "enableGlobalCheckpointGates": true,
     "glassOpacity": 0.18,
     "enableSoundScape": true,
     "cacheBufferThreshold": 25,
@@ -1305,5 +1305,7 @@
     "cssPrefix": "vbt-t-",
     "glassBlur": 8
   },
-  "updatedAt": "2026-10-06T18:22:14.847Z"
+  "selectedPropertyId": "royal-palm-estate",
+  "activeRoomId": "twilight-approach",
+  "updatedAt": "2026-10-06T18:59:19.363Z"
 }
