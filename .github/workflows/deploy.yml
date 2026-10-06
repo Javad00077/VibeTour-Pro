@@ -36,6 +36,37 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      # The dashboard's "download tour-data.json" flow ends with the owner
+      # uploading the file through the GitHub web UI, where it lands in the
+      # repo ROOT — a location GitHub Pages never serves. Promote root copies
+      # into public/ whenever they carry a NEWER updatedAt than the shipped
+      # one, so a manual upload still reaches every visitor. Newest wins in
+      # both directions: an old root file can never clobber a newer publish.
+      - name: Promote root-uploaded tour data into public/
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+          const pairs = [
+            ['tour-data.json', 'public/tour-data.json'],
+            ['admin-credential.json', 'public/admin-credential.json'],
+          ];
+          const stamp = (p) => {
+            try { const j = JSON.parse(fs.readFileSync(p, 'utf8')); return j && typeof j.updatedAt === 'string' ? j.updatedAt : ''; }
+            catch { return ''; }
+          };
+          for (const [src, dst] of pairs) {
+            if (!fs.existsSync(src)) continue;
+            const srcStamp = stamp(src);
+            const dstStamp = fs.existsSync(dst) ? stamp(dst) : '';
+            if (srcStamp && srcStamp > dstStamp) {
+              fs.copyFileSync(src, dst);
+              console.log(`Promoted ${src} -> ${dst} (updatedAt ${srcStamp})`);
+            } else {
+              console.log(`${dst} is up to date — leaving root ${src} untouched`);
+            }
+          }
+          EOF
+
       - name: Build Application
         run: npm run build
 

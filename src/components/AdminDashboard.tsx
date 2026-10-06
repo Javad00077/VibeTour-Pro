@@ -3249,12 +3249,15 @@ Inspect video codec compatibility, test frame buffering, and ensure smooth 60 FP
 
                     <p className="text-[11px] text-slate-300 leading-relaxed">
                       با این روش، اطلاعات به عنوان پیش‌فرضِ درون کدهای TypeScript ذخیره می‌شود و حتی بدون نیاز به هیچ فایل JSON یا اینترنت کار می‌کند:
+                      <span className="block text-amber-300/90 mt-1">
+                        ⚠ کل محتوای فایل <span className="font-mono">src/data/properties.ts</span> را با این کد جایگزین کنید (کد کامل و شامل همه exportهای لازم است)؛ جایگذاری ناقص، بیلد سایت را می‌شکند.
+                      </span>
                     </p>
 
                     <button
                       type="button"
                       onClick={() => {
-                        const tsCode = StorageService.generatePropertiesTsCode(properties);
+                        const tsCode = StorageService.generatePropertiesTsCode(properties, config);
                         navigator.clipboard.writeText(tsCode);
                         setCopiedTsCode(true);
                         showToast('کدهای TypeScript در کلیپ‌بورد کپی شد!');

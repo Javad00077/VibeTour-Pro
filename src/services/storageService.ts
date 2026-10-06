@@ -591,9 +591,24 @@ export class StorageService {
     URL.revokeObjectURL(url);
   }
 
-  // Generate src/data/properties.ts code to permanently hardcode into Git
-  public static generatePropertiesTsCode(properties: PropertyListing[]): string {
-    return `import { PropertyListing, PluginConfig } from '../types';\n\nexport const LUXURY_PROPERTIES: PropertyListing[] = ${JSON.stringify(properties, null, 2)};\n`;
+  // Generate src/data/properties.ts code to permanently hardcode into Git.
+  // The output must be a COMPLETE, compilable file: App.tsx and this module
+  // import both LUXURY_PROPERTIES and DEFAULT_CONFIG, so emitting only the
+  // properties array would break `vite build` and stop all deploys.
+  public static generatePropertiesTsCode(properties: PropertyListing[], config?: PluginConfig): string {
+    const effectiveConfig: PluginConfig = config || DEFAULT_CONFIG;
+    return [
+      "import { PropertyListing, PluginConfig } from '../types';",
+      '',
+      'export const LUXURY_PROPERTIES: PropertyListing[] = ' +
+        JSON.stringify(properties, null, 2) +
+        ';',
+      '',
+      'export const DEFAULT_CONFIG: PluginConfig = ' +
+        JSON.stringify(effectiveConfig, null, 2) +
+        ';',
+      ''
+    ].join('\n');
   }
 
   // Export JSON configuration file

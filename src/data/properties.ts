@@ -1288,3 +1288,29 @@ export const LUXURY_PROPERTIES: PropertyListing[] = [
     }
   }
 ];
+
+/**
+ * Bundled fallback configuration. The live values always come from the
+ * published store (public/tour-data.json → newest-wins loader); these are the
+ * defaults for a fresh visitor before any store is reachable.
+ * NOTE: this export must exist — App.tsx and storageService.ts import it, and
+ * regenerating this file without it breaks the production build.
+ */
+export const DEFAULT_CONFIG: PluginConfig = {
+  scrubSmoothing: 1.6,
+  pinThreshold: 0.94,
+  accentTheme: 'champagne',
+  enableWorkerPool: true,
+  enableReturnMatrix: true,
+  defaultFullscreen: false,
+  enableGlobalCheckpointGates: false,
+  glassOpacity: 0.18,
+  enableSoundScape: true,
+  cacheBufferThreshold: 25,
+  liteSpeedSafe: true,
+  language: 'en',
+  autoplaySpeed: 0.6,
+  scrollSpeedFactor: 0.25,
+  cssPrefix: 'vbt-t-',
+  glassBlur: 8
+};
