@@ -87,6 +87,28 @@ function drawVideoCover(
   }
 }
 
+// ── Poster pipeline ─────────────────────────────────────────────────────
+// Posters are the very first pixels the visitor sees, so they are also the
+// first bytes on the critical path. We ship a compressed `.webp` next to every
+// `.jpg` (≈55% smaller for the same 720×1280 frame) and try it first; the
+// original URL stays as the fallback, so legacy/remote posters keep working.
+const POSTER_EXT_RE = /\.(jpe?g|png)$/i;
+
+/**
+ * Ordered poster URLs for a room: the compressed sibling first (only for
+ * same-origin raster posters we actually shipped a `.webp` for), then the
+ * original URL as an unconditional fallback.
+ */
+export function posterCandidates(url?: string): string[] {
+  if (!url) return [];
+  const isSameOriginRaster =
+    POSTER_EXT_RE.test(url) &&
+    !/^(https?:)?\/\//i.test(url) &&
+    !/^(blob:|data:)/i.test(url);
+  if (!isSameOriginRaster) return [url];
+  return [url.replace(POSTER_EXT_RE, '.webp'), url];
+}
+
 export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   property,
   config,
@@ -245,6 +267,83 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     };
   }, []);
 
+  // ── Poster promotion bookkeeping (webp-first) ──────────────────────────
+  // room.id -> ORIGINAL mediaUrl whose webp/fallback chain already resolved.
+  // Keyed by the ORIGINAL url so an admin poster swap is detected immediately:
+  // the guard compares against room.mediaUrl, and a mismatch re-runs imgForUrl
+  // (whose cache is keyed by URL, so the new poster loads; the old key just
+  // becomes an unused cache entry).
+  const posterPromotedRef = useRef<Map<string, string>>(new Map());
+  // Poster candidates that failed to load (e.g. a legacy room without a webp
+  // sibling). Remembered forever so the 60fps render loop never re-requests a
+  // 404'ing candidate every frame.
+  const posterFailedRef = useRef<Set<string>>(new Set());
+
+  // ── Poster cache (webp-first) ──────────────────────────────────
+  // Keyed by poster URL, not room id: when the admin swaps mediaUrl both the
+  // "already promoted" guard and the src comparison go stale and would keep
+  // the OLD image on the canvas. Cache key = URL, so the new poster loads in.
+  /**
+   * Fetch (or return from cache) a poster for this URL, trying the compressed
+   * `.webp` sibling first and falling back to the original URL. `onDone` fires
+   * once per successful candidate — first caller wins.
+   *
+   * Returns the Image that is currently usable (or in flight), or undefined.
+   */
+  const imgForUrl = useCallback((url: string, onDone: () => void): HTMLImageElement | undefined => {
+    if (!url) return undefined;
+    const candidates = posterCandidates(url).filter((src) => !posterFailedRef.current.has(src));
+    if (candidates.length === 0) return undefined;
+    for (const src of candidates) {
+      const img = imageCacheRef.current.get(src);
+      if (img?.complete && img.naturalWidth > 0) {
+        onDone();
+        return img;
+      }
+    }
+
+    const load = (src: string, next: () => void) => {
+      let img = imageCacheRef.current.get(src);
+      if (!img) {
+        img = new Image();
+        img.crossOrigin = 'anonymous'; // required for drawImage onto the canvas
+        imageCacheRef.current.set(src, img);
+        img.src = src;
+        const fail = () => {
+          posterFailedRef.current.add(src);
+          imageCacheRef.current.delete(src);
+          next();
+        };
+        if (img.decode) {
+          img.decode().then(() => onDone()).catch(fail);
+        } else {
+          img.onload = () => onDone();
+          img.onerror = fail;
+        }
+      }
+      return img;
+    };
+
+    if (candidates.length > 1) {
+      // Try the compressed candidate; on failure walk to the original.
+      return load(candidates[0], () => {
+        load(candidates[1], () => {});
+      });
+    }
+    return load(candidates[0], () => {});
+  }, []);
+
+  /** Best DECODED image for this poster url, honouring failed candidates. */
+  const cachedPoster = useCallback((url?: string): HTMLImageElement | undefined => {
+    if (!url) return undefined;
+    for (const src of posterCandidates(url)) {
+      if (posterFailedRef.current.has(src)) continue;
+      const img = imageCacheRef.current.get(src);
+      if (img?.complete && img.naturalWidth > 0) return img;
+    }
+    return undefined;
+  }, []);
+
   useEffect(() => {
     // Shared-video mode: ONE master element carries the whole film — no per-room
     // sources, no staged loading. A single HTTP 206 stream, a single decoder.
@@ -271,7 +370,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       return;
     }
 
-    const assignSrc = (room: Room) => {
+    // `tier` decides how much of the clip the browser is allowed to fetch:
+    //   'auto'     → stream it now (the chamber on screen + its neighbours)
+    //   'metadata' → duration/dimensions only, a few KB, until it is visited
+    const assignSrc = (room: Room, tier: 'auto' | 'metadata') => {
       const candidates = resolveCandidates(room);
       if (candidates.length === 0) return;
       const resolved = candidates[0];
@@ -280,11 +382,17 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       // Re-assign BOTH on first load and whenever the resolved URL changed
       // (edited videoUrl). The old Set-based check assigned only once per
       // mount, so edited links never reached the player.
-      if (el.dataset.currentStreamUrl === resolved && assignedSrcsRef.current.get(room.id) === resolved) return;
+      // A tier upgrade (metadata → auto) ALSO re-assigns: the clip is already
+      // attached but the browser must now stream its bytes eagerly.
+      const alreadyAttached = el.dataset.currentStreamUrl === resolved && assignedSrcsRef.current.get(room.id) === resolved;
+      if (alreadyAttached && el.preload === tier) return;
+      if (alreadyAttached && tier === 'metadata') return; // never downgrade
       assignedSrcsRef.current.set(room.id, resolved);
       resolvedCandidatesRef.current.set(room.id, candidates);
       el.dataset.currentStreamUrl = resolved;
       el.dataset.candidateIdx = '0';
+      // Set before src so the first resource selection already obeys the tier
+      el.preload = tier;
       // Edited URL → reset the latch so the new clip latches cleanly, and
       // reset the smooth-scrub state for the same reason
       videoLatchedRef.current.delete(room.id);
@@ -298,22 +406,40 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     const videoRooms = property.rooms.filter((r) => r.videoUrl && !r.videoUrl.startsWith('blob:'));
     const activeIdx = Math.max(0, property.rooms.findIndex((r) => r.id === activeRoom.id));
 
-    // Immediate priority: current chamber and its neighbors
-    assignSrc(property.rooms[activeIdx]);
-    if (property.rooms[activeIdx + 1]) assignSrc(property.rooms[activeIdx + 1]);
-    if (property.rooms[activeIdx - 1]) assignSrc(property.rooms[activeIdx - 1]);
+    // ── Smart staging ──────────────────────────────────────────────────
+    // Before, every chamber attached with `preload="auto"`, so the whole tour
+    // (tens of MB) competed with the very first frame the visitor waits for.
+    // Now only what is about to be seen is streamed eagerly.
+    //
+    // Tier 0 — the chamber on screen right now.
+    assignSrc(property.rooms[activeIdx], 'auto');
 
-    // Staged background loading for the rest of the tour
-    const timer = setInterval(() => {
+    // Tier 1 — the two neighbours, needed for the crossfade on the next scroll.
+    // One tick later, so the active clip owns the first bytes on the socket.
+    const neighbourTimer = window.setTimeout(() => {
+      if (property.rooms[activeIdx + 1]) assignSrc(property.rooms[activeIdx + 1], 'auto');
+      if (property.rooms[activeIdx - 1]) assignSrc(property.rooms[activeIdx - 1], 'auto');
+    }, 600);
+
+    // Tier 2 — the rest of the tour, one at a time, and only metadata.
+    let stageTimer = 0;
+    let cancelled = false;
+    const stageNext = () => {
+      if (cancelled) return;
       const next = videoRooms.find((r) => !assignedSrcsRef.current.has(r.id));
-      if (next) {
-        assignSrc(next);
-      } else {
-        clearInterval(timer);
-      }
-    }, 1200);
+      if (!next) return;
+      assignSrc(next, 'metadata');
+      // Sequential, not parallel: six simultaneous range requests would starve
+      // the chamber the visitor is actually looking at.
+      stageTimer = window.setTimeout(stageNext, 900);
+    };
+    stageTimer = window.setTimeout(stageNext, 2200);
 
-    return () => clearInterval(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(neighbourTimer);
+      window.clearTimeout(stageTimer);
+    };
   }, [property.rooms, activeRoom.id, allRoomsShareVideo, resolveCandidates, installCandidateFallback]);
 
   // Attach & warm the master video element so the first scroll tick paints instantly
@@ -370,32 +496,26 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     const total = Math.max(1, property.rooms.length);
 
     property.rooms.forEach((room) => {
-      let img = imageCacheRef.current.get(room.id);
-      if (!img || img.src !== room.mediaUrl) {
-        img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = room.mediaUrl;
-        
-        const onDone = () => {
-          if (img) imageCacheRef.current.set(room.id, img);
-          loadedCount++;
-          const pct = Math.round((loadedCount / total) * 100);
-          setBufferProgress(pct);
-          if (pct >= 20) {
-            setIsBufferReady(true);
-          }
-        };
-
-        if (img.decode) {
-          img.decode().then(onDone).catch(onDone);
-        } else {
-          img.onload = onDone;
-          img.onerror = onDone;
-        }
-      } else {
+      // Already promoted for THIS poster URL → instant count, zero re-fetch.
+      if (posterPromotedRef.current.get(room.id) === room.mediaUrl) {
         loadedCount++;
         setBufferProgress(Math.round((loadedCount / total) * 100));
+        return;
       }
+      const onDone = (loadedVia: string) => {
+        // Only the run whose URL is still current promotes the room; a stale
+        // closure from a previous mediaUrl must not mark the new poster ready.
+        if (room.mediaUrl !== loadedVia) return;
+        posterPromotedRef.current.set(room.id, loadedVia);
+        loadedCount++;
+        const pct = Math.round((loadedCount / total) * 100);
+        setBufferProgress(pct);
+        if (pct >= 20) {
+          setIsBufferReady(true);
+        }
+      };
+
+      imgForUrl(room.mediaUrl, () => onDone(room.mediaUrl));
     });
 
     const timer = setTimeout(() => {
@@ -919,12 +1039,13 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               const w = window as unknown as { __vbtPosterAfterLatch?: number };
               w.__vbtPosterAfterLatch = (w.__vbtPosterAfterLatch || 0) + 1;
             }
-            let img = imageCacheRef.current.get(currRoom.id);
+            // Draw the poster for the room's CURRENT mediaUrl (webp-first,
+            // URL-keyed cache) while its clip is still buffering.
+            let img = cachedPoster(currRoom.mediaUrl);
             if (!img && currRoom.mediaUrl) {
-              img = new Image();
-              img.crossOrigin = 'anonymous';
-              img.src = currRoom.mediaUrl;
-              imageCacheRef.current.set(currRoom.id, img);
+              // Lazy, webp-first: pass a no-op callback — nothing re-renders
+              // from here, the canvas just draws whatever is cached next frame.
+              img = imgForUrl(currRoom.mediaUrl, () => {});
             }
 
             ctx.fillStyle = '#090a0f';
