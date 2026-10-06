@@ -1,460 +1,1290 @@
 import { PropertyListing, PluginConfig } from '../types';
 
-/**
- * VibeTour Pro — ROYAL PALM Flagship Residence
- *
- * The whole tour rides ONE master film ("Camera Entering Room Showing Brand"):
- * a cinematic dusk approach across the infinity pool into the glass façade,
- * then inside to the oceanfront grand salon with piano and fire tables.
- *
- * Every chapter shares the same master clip (video/Royal-Palm-Master.mp4). The engine
- * detects this and engages single-decoder shared mode: ONE video element,
- * scrubbed 1:1 with global tour progress across its full 10.0s duration.
- * Chapters are pure timeline windows — zero crossfade juggling, zero
- * parallel decoders = buttery smooth scrubbing even on modest hardware.
- *
- * Timeline map (master duration 10.0s):
- *   0.0s – 4.7s   Exterior: pool glide toward the illuminated façade
- *   4.7s – 10.0s  Interior: grand salon entry, lounge + piano reveal
- */
-
-const BASE = 'video/';
-const MASTER_VIDEO = `${BASE}Royal-Palm-Master.mp4`;
-export const MASTER_DURATION_SECONDS = 10.0;
-
-// Chapter windows expressed in master-video seconds, then normalized to 0..1
-const ch = (startSec: number, endSec: number) => ({
-  startProgress: +(startSec / MASTER_DURATION_SECONDS).toFixed(4),
-  endProgress: +(endSec / MASTER_DURATION_SECONDS).toFixed(4)
-});
-
 export const LUXURY_PROPERTIES: PropertyListing[] = [
   {
-    id: 'royal-palm-estate',
-    title: 'Royal Palm Estate',
-    subtitle: 'Oceanfront Modern Masterpiece • 1.4-Acre Private Bluff',
-    tagline: 'Where Architecture Meets the Horizon',
-    location: 'Montecito, California',
-    price: '$34,900,000',
-    numericPrice: 34900000,
-    currency: 'USD',
-    beds: 6,
-    baths: 9,
-    sqft: 13400,
-    mlsNumber: 'MT-90210-ROYAL',
-    architect: 'Atelier Pacific Design Group',
-    yearBuilt: 2025,
-    heroImage: 'video/posters/ch01.jpg',
-    rooms: [
-      /* ------------------------------------------ 01 TWILIGHT APPROACH */
+    "id": "prop-1791108204838",
+    "title": "Hotels",
+    "titleFa": "هتل اسپیناس",
+    "subtitle": "Ultra-Luxury Kinetic Walkthrough Residence",
+    "subtitleFa": "Exclusive architectural estate with interactive tour",
+    "tagline": "Exclusive Architectural Trophy Estate",
+    "location": "Beverly Hills, California",
+    "price": "$38,500,000",
+    "numericPrice": 30000000,
+    "currency": "$",
+    "beds": 5,
+    "baths": 6,
+    "sqft": 10800,
+    "mlsNumber": "VBT-536579",
+    "architect": "Zaha Hadid Architects",
+    "yearBuilt": 2025,
+    "heroImage": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
+    "rooms": [
       {
-        id: 'twilight-approach',
-        name: 'Twilight Pool Approach',
-        nameFa: 'ورود غروب از روی استخر',
-        shortName: '01. Approach',
-        shortNameFa: '۰۱. ورود',
-        subtitle: 'Gliding across the vanishing-edge pool toward the illuminated glass façade',
-        subtitleFa: 'حرکت روی استخر بی‌نهایت به سمت نمای شیشه‌ای نورانی',
-        icon: 'Compass',
-        ...ch(0.0, 2.4),
-        totalFrames: 72,
-        mediaType: 'mp4',
-        mediaUrl: 'video/posters/ch01.jpg',
-        videoUrl: MASTER_VIDEO,
-        thumbnailUrl: 'video/posters/ch01.jpg',
-        ambientDescription: 'The film opens at blue hour: the camera skims the mirror-calm infinity pool, the residence glowing in layered cove lighting beyond the water.',
-        ambientDescriptionFa: 'فیلم در ساعت آبی آغاز می‌شود؛ دوربین روی آب آرام استخر بی‌نهایت سُر می‌خورد و عمارت با نورپردازی پنهان در آن‌سوی آب می‌درخشد.',
-        sqft: 4200,
-        exposure: 'West / Pacific Sunset',
-        ceilingHeight: 'Open Air',
-        enablePauseGate: false,
-        hotspots: [
+        "id": "prop-1791108204838-room-1",
+        "name": "Twilight Pool Approach",
+        "nameFa": "ورود غروب از روی استخر",
+        "shortName": "01. Approach",
+        "shortNameFa": "۰۱. ورود",
+        "subtitle": "Gliding across the vanishing-edge pool toward the illuminated glass façade",
+        "subtitleFa": "حرکت روی استخر بی‌نهایت به سمت نمای شیشه‌ای نورانی",
+        "icon": "Compass",
+        "startProgress": 0,
+        "endProgress": 0.14,
+        "totalFrames": 72,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch01.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/raw/refs/heads/Javad00077-patch-1/Exterior%20Approach%20&%20Heliport1.mp4",
+        "thumbnailUrl": "video/posters/ch01.jpg",
+        "ambientDescription": "The film opens at blue hour: the camera skims the mirror-calm infinity pool, the residence glowing in layered cove lighting beyond the water.",
+        "ambientDescriptionFa": "فیلم در ساعت آبی آغاز می‌شود؛ دوربین روی آب آرام استخر بی‌نهایت سُر می‌خورد و عمارت با نورپردازی پنهان در آن‌سوی آب می‌درخشد.",
+        "sqft": 4200,
+        "exposure": "West / Pacific Sunset",
+        "ceilingHeight": "Open Air",
+        "enablePauseGate": true,
+        "hotspots": [
           {
-            id: 'hs-facade-glass',
-            x: 52,
-            y: 38,
-            frameRange: [18, 70],
-            title: 'Floor-to-Ceiling Glass Curtain Wall',
-            category: 'Architectural',
-            description: 'A seamless 40-meter glazed façade engineered for coastal salt air, dissolving the boundary between pool terrace and great room.',
-            spec: 'Coastal-Rated Low-E Glazing System',
-            priceTag: '$1,850,000'
+            "id": "hs-facade-glass",
+            "x": 52,
+            "y": 38,
+            "frameRange": [
+              18,
+              70
+            ],
+            "title": "Floor-to-Ceiling Glass Curtain Wall",
+            "category": "Architectural",
+            "description": "A seamless 40-meter glazed façade engineered for coastal salt air, dissolving the boundary between pool terrace and great room.",
+            "spec": "Coastal-Rated Low-E Glazing System",
+            "priceTag": "$1,850,000"
           },
           {
-            id: 'hs-cove-lighting',
-            x: 30,
-            y: 55,
-            frameRange: [8, 60],
-            title: 'Architectural Cove Lighting Scene',
-            category: 'Design',
-            description: 'Programmable Lutron scene lighting traces the roofline and pool basin, choreographed to dusk for maximum drama.',
-            spec: 'Ketra Full-Spectrum tunable LEDs',
-            priceTag: '$120,000'
+            "id": "hs-cove-lighting",
+            "x": 30,
+            "y": 55,
+            "frameRange": [
+              8,
+              60
+            ],
+            "title": "Architectural Cove Lighting Scene",
+            "category": "Design",
+            "description": "Programmable Lutron scene lighting traces the roofline and pool basin, choreographed to dusk for maximum drama.",
+            "spec": "Ketra Full-Spectrum tunable LEDs",
+            "priceTag": "$120,000"
           }
         ],
-        materials: [
+        "materials": [
           {
-            id: 'mat-pool-basin',
-            name: 'Midnight Quartz Pool Interior',
-            category: 'Pool Finishes',
-            origin: 'Vicenza, Italy',
-            finish: 'Hand-troweled exposed aggregate',
-            description: 'A deep sapphire-quartz finish turns the pool into liquid onyx at dusk, mirroring the illuminated residence.',
-            swatchUrl: 'video/posters/ch01.jpg',
-            spec: 'Exposed aggregate, 10-year warranty',
-            ecoCert: 'NSF/ANSI 50 Certified',
-            x: 35,
-            y: 78
+            "id": "mat-pool-basin",
+            "name": "Midnight Quartz Pool Interior",
+            "category": "Pool Finishes",
+            "origin": "Vicenza, Italy",
+            "finish": "Hand-troweled exposed aggregate",
+            "description": "A deep sapphire-quartz finish turns the pool into liquid onyx at dusk, mirroring the illuminated residence.",
+            "swatchUrl": "video/posters/ch01.jpg",
+            "spec": "Exposed aggregate, 10-year warranty",
+            "ecoCert": "NSF/ANSI 50 Certified",
+            "x": 35,
+            "y": 78
           },
           {
-            id: 'mat-terrace-stone',
-            name: 'Honed Basalt Pool Deck',
-            category: 'Stone & Cladding',
-            origin: 'Xiamen, China',
-            finish: 'Honed, heat-resistant',
-            description: 'Velvet-smooth volcanic basalt stays cool underfoot beside the water and deepens the monolithic palette.',
-            swatchUrl: 'video/posters/ch02.jpg',
-            spec: '20mm pavers, Mohs 6.5',
-            x: 68,
-            y: 82
+            "id": "mat-terrace-stone",
+            "name": "Honed Basalt Pool Deck",
+            "category": "Stone & Cladding",
+            "origin": "Xiamen, China",
+            "finish": "Honed, heat-resistant",
+            "description": "Velvet-smooth volcanic basalt stays cool underfoot beside the water and deepens the monolithic palette.",
+            "swatchUrl": "video/posters/ch02.jpg",
+            "spec": "20mm pavers, Mohs 6.5",
+            "x": 68,
+            "y": 82
+          }
+        ],
+        "isHub": true,
+        "pauseCheckpointProgress": 0.95
+      },
+      {
+        "id": "prop-1791108204838-room-2",
+        "name": "Oceanfront Grand Salon",
+        "nameFa": "سالن بزرگ رو به اقیانوس",
+        "shortName": "04. Great Room",
+        "shortNameFa": "۰۴. سالن",
+        "subtitle": "Sunken lounge, fire tables and the concert piano beneath the ocean panorama",
+        "subtitleFa": "لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس",
+        "icon": "Tv",
+        "startProgress": 0.14,
+        "endProgress": 0.29,
+        "totalFrames": 63,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch04.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Greatroom.mp4",
+        "thumbnailUrl": "video/posters/ch04.jpg",
+        "ambientDescription": "The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.",
+        "ambientDescriptionFa": "قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.",
+        "sqft": 2450,
+        "exposure": "Full West / Ocean Panorama",
+        "ceilingHeight": "16 Feet",
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-fire-tables",
+            "x": 55,
+            "y": 62,
+            "frameRange": [
+              6,
+              60
+            ],
+            "title": "Sculptural Fire Tables",
+            "category": "Design",
+            "description": "Cast-stone fire tables anchor the conversation pits, mixing live flame with the cool palette of stone and linen.",
+            "spec": "Linear ethanol burners, remote modulated",
+            "priceTag": "$72,000"
+          },
+          {
+            "id": "hs-piano",
+            "x": 76,
+            "y": 55,
+            "frameRange": [
+              10,
+              63
+            ],
+            "title": "Concert Grand Piano",
+            "category": "Design",
+            "description": "A polished grand piano sits on the ocean axis — the salon doubles as an intimate recital hall at sunset.",
+            "spec": "Full-size concert grand, ivory finish",
+            "priceTag": "$190,000"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-salon-boucle",
+            "name": "Ivory Bouclé Lounge Seating",
+            "category": "Fabrics & Upholstery",
+            "origin": "Piedmont, Italy",
+            "finish": "Heavy loop weave, feather-wrapped",
+            "description": "Modular bouclé sofas wrap the fire pits in soft, tactile ivory — comfort engineered to the tune of 100,000 rubs.",
+            "swatchUrl": "video/posters/ch04.jpg",
+            "spec": "100,000 Martindale rubs",
+            "x": 35,
+            "y": 66
+          },
+          {
+            "id": "mat-salon-ceiling",
+            "name": "Battened Oak Ceiling",
+            "category": "Wood & Joinery",
+            "origin": "Fontainebleau, France",
+            "finish": "Smoked, ultra-matte",
+            "description": "Slim oak battens space the ceiling and conceal linear AC and acoustic damping above the salon.",
+            "swatchUrl": "video/posters/ch05.jpg",
+            "spec": "FSC oak, acoustic felt backing",
+            "x": 60,
+            "y": 28
           }
         ]
       },
-
-      /* ------------------------------------------ 02 FACADE REVEAL */
       {
-        id: 'facade-reveal',
-        name: 'Glass Façade Reveal',
-        nameFa: 'نمای شیشه‌ای و ورودی',
-        shortName: '02. Façade',
-        shortNameFa: '۰۲. نما',
-        subtitle: 'The full modern pavilion comes into frame across the reflecting water',
-        subtitleFa: 'نمای کامل عمارت مدرن در قاب آب انعکاسی',
-        icon: 'Sun',
-        ...ch(2.4, 4.7),
-        totalFrames: 69,
-        mediaType: 'mp4',
-        mediaUrl: 'video/posters/ch02.jpg',
-        videoUrl: MASTER_VIDEO,
-        thumbnailUrl: 'video/posters/ch02.jpg',
-        ambientDescription: 'The approach widens: symmetrical pavilions, floating roof planes and the glass great room arrive together in one composed frame.',
-        ambientDescriptionFa: 'زاویه باز می‌شود: پاویون‌های متقارن، سقف‌های شناور و گریت‌روم شیشه‌ای در یک قاب واحد ظاهر می‌شوند.',
-        sqft: 13400,
-        exposure: 'West / Panoramic Ocean',
-        ceilingHeight: 'Open Air',
-        enablePauseGate: false,
-        hotspots: [
+        "id": "prop-1791108204838-room-3",
+        "name": "Glass Façade Reveal",
+        "nameFa": "نمای شیشه‌ای و ورودی",
+        "shortName": "02. Façade",
+        "shortNameFa": "۰۲. نما",
+        "subtitle": "The full modern pavilion comes into frame across the reflecting water",
+        "subtitleFa": "نمای کامل عمارت مدرن در قاب آب انعکاسی",
+        "icon": "Sun",
+        "startProgress": 0.29,
+        "endProgress": 0.43,
+        "totalFrames": 69,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch02.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Greatroom.mp4",
+        "thumbnailUrl": "video/posters/ch02.jpg",
+        "ambientDescription": "The approach widens: symmetrical pavilions, floating roof planes and the glass great room arrive together in one composed frame.",
+        "ambientDescriptionFa": "زاویه باز می‌شود: پاویون‌های متقارن، سقف‌های شناور و گریت‌روم شیشه‌ای در یک قاب واحد ظاهر می‌شوند.",
+        "sqft": 13400,
+        "exposure": "West / Panoramic Ocean",
+        "ceilingHeight": "Open Air",
+        "enablePauseGate": false,
+        "hotspots": [
           {
-            id: 'hs-floating-roof',
-            x: 50,
-            y: 30,
-            frameRange: [10, 65],
-            title: 'Cantilevered Roof Planes',
-            category: 'Architectural',
-            description: 'Deep roof overhangs appear to float on razor-thin fascia lines, shading the glass while framing ocean views.',
-            spec: 'Steel moment-frame, 4m cantilever',
-            priceTag: '$640,000'
+            "id": "hs-floating-roof",
+            "x": 50,
+            "y": 30,
+            "frameRange": [
+              10,
+              65
+            ],
+            "title": "Cantilevered Roof Planes",
+            "category": "Architectural",
+            "description": "Deep roof overhangs appear to float on razor-thin fascia lines, shading the glass while framing ocean views.",
+            "spec": "Steel moment-frame, 4m cantilever",
+            "priceTag": "$640,000"
           },
           {
-            id: 'hs-royal-palm-brand',
-            x: 62,
-            y: 42,
-            frameRange: [20, 69],
-            title: 'ROYAL PALM Brand Film',
-            category: 'Design',
-            description: 'This master film is the estate’s signature brand asset — the same footage powers every chapter of the interactive tour.',
-            spec: 'Master 720p30, all-intra keyframes',
-            priceTag: 'Signature Asset'
+            "id": "hs-royal-palm-brand",
+            "x": 62,
+            "y": 42,
+            "frameRange": [
+              20,
+              69
+            ],
+            "title": "ROYAL PALM Brand Film",
+            "category": "Design",
+            "description": "This master film is the estate’s signature brand asset — the same footage powers every chapter of the interactive tour.",
+            "spec": "Master 720p30, all-intra keyframes",
+            "priceTag": "Signature Asset"
           }
         ],
-        materials: [
+        "materials": [
           {
-            id: 'mat-stucco-white',
-            name: 'Mineral White Render',
-            category: 'Stone & Cladding',
-            origin: 'Stuttgart, Germany',
-            finish: 'Fine aggregate, hand-floated',
-            description: 'Breathable mineral stucco keeps the volumes crisp white through coastal humidity without cracking.',
-            swatchUrl: 'video/posters/ch02.jpg',
-            spec: 'Class A fire rated',
-            x: 30,
-            y: 45
+            "id": "mat-stucco-white",
+            "name": "Mineral White Render",
+            "category": "Stone & Cladding",
+            "origin": "Stuttgart, Germany",
+            "finish": "Fine aggregate, hand-floated",
+            "description": "Breathable mineral stucco keeps the volumes crisp white through coastal humidity without cracking.",
+            "swatchUrl": "video/posters/ch02.jpg",
+            "spec": "Class A fire rated",
+            "x": 30,
+            "y": 45
           },
           {
-            id: 'mat-reflecting-edge',
-            name: 'Vanishing-Edge Weir Wall',
-            category: 'Pool Finishes',
-            origin: 'Custom cast-in-place',
-            finish: 'Polished white precast',
-            description: 'A knife-edge weir lets the pool surface merge with the horizon line from every principal room.',
-            swatchUrl: 'video/posters/ch01.jpg',
-            spec: 'Cast-in-place structural acrylic interface',
-            x: 45,
-            y: 80
+            "id": "mat-reflecting-edge",
+            "name": "Vanishing-Edge Weir Wall",
+            "category": "Pool Finishes",
+            "origin": "Custom cast-in-place",
+            "finish": "Polished white precast",
+            "description": "A knife-edge weir lets the pool surface merge with the horizon line from every principal room.",
+            "swatchUrl": "video/posters/ch01.jpg",
+            "spec": "Cast-in-place structural acrylic interface",
+            "x": 45,
+            "y": 80
           }
         ]
       },
-
-      /* ------------------------------------------ 03 THRESHOLD ENTRY */
       {
-        id: 'threshold-entry',
-        name: 'The Threshold Entry',
-        nameFa: 'آستانه ورودی شیشه‌ای',
-        shortName: '03. Entry',
-        shortNameFa: '۰۳. ورودی',
-        subtitle: 'Crossing the glass line into the warm ocean-view interior',
-        subtitleFa: 'عبور از خط شیشه به فضای گرم داخل',
-        icon: 'Flame',
-        ...ch(4.7, 6.1),
-        totalFrames: 42,
-        mediaType: 'mp4',
-        mediaUrl: 'video/posters/ch03.jpg',
-        videoUrl: MASTER_VIDEO,
-        thumbnailUrl: 'video/posters/ch03.jpg',
-        ambientDescription: 'The cut lands inside the entry gallery: the same dusk sky now framed by the interior, water views pulling straight through the house.',
-        ambientDescriptionFa: 'نما داخلی می‌شود: همان آسمان غروب حالا از داخل قاب شده و نمای آب مستقیم از یک‌سوی خانه به سوی دیگر ادامه دارد.',
-        sqft: 900,
-        exposure: 'South / Ocean Axis',
-        ceilingHeight: '14 Feet',
-        isHub: true,
-        enablePauseGate: false,
-        hotspots: [
+        "id": "room-custom-1791183187887",
+        "name": "Private Suite 7",
+        "nameFa": "jhkj",
+        "shortName": "07. Suite",
+        "shortNameFa": "07. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.43,
+        "endProgress": 0.57,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "video/Royal-Palm-Master.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
           {
-            id: 'hs-entry-axis',
-            x: 48,
-            y: 50,
-            frameRange: [4, 40],
-            title: 'Straight-Line Ocean Axis',
-            category: 'Architectural',
-            description: 'Entry, gallery and great room share one unbroken sightline to the Pacific — the estate’s organizing gesture.',
-            spec: 'Aligned structural bays, zero mullions',
-            priceTag: 'Signature Gesture'
+            "id": "hs-1791183187887",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
           }
         ],
-        materials: [
+        "materials": [
           {
-            id: 'mat-entry-oak',
-            name: 'Wide-Plank White Oak Floors',
-            category: 'Flooring',
-            origin: 'Appalachians, USA',
-            finish: 'Natural matte hardwax oil',
-            description: 'Continuous oak runs from threshold to great room, hiding expansion joints for an unbroken plane.',
-            swatchUrl: 'video/posters/ch03.jpg',
-            spec: '260mm engineered plank',
-            x: 40,
-            y: 70
+            "id": "mat-1791183187887",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
           }
         ]
       },
-
-      /* ------------------------------------------ 04 GRAND SALON */
       {
-        id: 'grand-salon',
-        name: 'Oceanfront Grand Salon',
-        nameFa: 'سالن بزرگ رو به اقیانوس',
-        shortName: '04. Great Room',
-        shortNameFa: '۰۴. سالن',
-        subtitle: 'Sunken lounge, fire tables and the concert piano beneath the ocean panorama',
-        subtitleFa: 'لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس',
-        icon: 'Tv',
-        ...ch(6.1, 8.2),
-        totalFrames: 63,
-        mediaType: 'mp4',
-        mediaUrl: 'video/posters/ch04.jpg',
-        videoUrl: MASTER_VIDEO,
-        thumbnailUrl: 'video/posters/ch04.jpg',
-        ambientDescription: 'The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.',
-        ambientDescriptionFa: 'قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.',
-        sqft: 2450,
-        exposure: 'Full West / Ocean Panorama',
-        ceilingHeight: '16 Feet',
-        enablePauseGate: false,
-        hotspots: [
+        "id": "prop-1791108204838-room-4",
+        "name": "The Threshold Entry",
+        "nameFa": "آستانه ورودی شیشه‌ای",
+        "shortName": "03. Entry",
+        "shortNameFa": "۰۳. ورودی",
+        "subtitle": "Crossing the glass line into the warm ocean-view interior",
+        "subtitleFa": "عبور از خط شیشه به فضای گرم داخل",
+        "icon": "Flame",
+        "startProgress": 0.57,
+        "endProgress": 0.71,
+        "totalFrames": 42,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch03.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Greatroom.mp4",
+        "thumbnailUrl": "video/posters/ch03.jpg",
+        "ambientDescription": "The cut lands inside the entry gallery: the same dusk sky now framed by the interior, water views pulling straight through the house.",
+        "ambientDescriptionFa": "نما داخلی می‌شود: همان آسمان غروب حالا از داخل قاب شده و نمای آب مستقیم از یک‌سوی خانه به سوی دیگر ادامه دارد.",
+        "sqft": 900,
+        "exposure": "South / Ocean Axis",
+        "ceilingHeight": "14 Feet",
+        "isHub": true,
+        "enablePauseGate": false,
+        "hotspots": [
           {
-            id: 'hs-fire-tables',
-            x: 55,
-            y: 62,
-            frameRange: [6, 60],
-            title: 'Sculptural Fire Tables',
-            category: 'Design',
-            description: 'Cast-stone fire tables anchor the conversation pits, mixing live flame with the cool palette of stone and linen.',
-            spec: 'Linear ethanol burners, remote modulated',
-            priceTag: '$72,000'
-          },
-          {
-            id: 'hs-piano',
-            x: 76,
-            y: 55,
-            frameRange: [10, 63],
-            title: 'Concert Grand Piano',
-            category: 'Design',
-            description: 'A polished grand piano sits on the ocean axis — the salon doubles as an intimate recital hall at sunset.',
-            spec: 'Full-size concert grand, ivory finish',
-            priceTag: '$190,000'
+            "id": "hs-entry-axis",
+            "x": 48,
+            "y": 50,
+            "frameRange": [
+              4,
+              40
+            ],
+            "title": "Straight-Line Ocean Axis",
+            "category": "Architectural",
+            "description": "Entry, gallery and great room share one unbroken sightline to the Pacific — the estate’s organizing gesture.",
+            "spec": "Aligned structural bays, zero mullions",
+            "priceTag": "Signature Gesture"
           }
         ],
-        materials: [
+        "materials": [
           {
-            id: 'mat-salon-boucle',
-            name: 'Ivory Bouclé Lounge Seating',
-            category: 'Fabrics & Upholstery',
-            origin: 'Piedmont, Italy',
-            finish: 'Heavy loop weave, feather-wrapped',
-            description: 'Modular bouclé sofas wrap the fire pits in soft, tactile ivory — comfort engineered to the tune of 100,000 rubs.',
-            swatchUrl: 'video/posters/ch04.jpg',
-            spec: '100,000 Martindale rubs',
-            x: 35,
-            y: 66
-          },
-          {
-            id: 'mat-salon-ceiling',
-            name: 'Battened Oak Ceiling',
-            category: 'Wood & Joinery',
-            origin: 'Fontainebleau, France',
-            finish: 'Smoked, ultra-matte',
-            description: 'Slim oak battens space the ceiling and conceal linear AC and acoustic damping above the salon.',
-            swatchUrl: 'video/posters/ch05.jpg',
-            spec: 'FSC oak, acoustic felt backing',
-            x: 60,
-            y: 28
+            "id": "mat-entry-oak",
+            "name": "Wide-Plank White Oak Floors",
+            "category": "Flooring",
+            "origin": "Appalachians, USA",
+            "finish": "Natural matte hardwax oil",
+            "description": "Continuous oak runs from threshold to great room, hiding expansion joints for an unbroken plane.",
+            "swatchUrl": "video/posters/ch03.jpg",
+            "spec": "260mm engineered plank",
+            "x": 40,
+            "y": 70
           }
         ]
       },
-
-      /* ------------------------------------------ 05 SALON PANORAMA */
       {
-        id: 'salon-panorama',
-        name: 'Sunset Panorama Wall',
-        nameFa: 'پانورامای غروب',
-        shortName: '05. Panorama',
-        shortNameFa: '۰۵. پانوراما',
-        subtitle: 'The camera drifts along 18 meters of uninterrupted ocean glass',
-        subtitleFa: 'دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند',
-        icon: 'Sun',
-        ...ch(8.2, 9.2),
-        totalFrames: 30,
-        mediaType: 'mp4',
-        mediaUrl: 'video/posters/ch05.jpg',
-        videoUrl: MASTER_VIDEO,
-        thumbnailUrl: 'video/posters/ch05.jpg',
-        ambientDescription: 'Every seat owns the horizon: the drift reveals the full panorama wall, palm silhouettes and the last light on the water.',
-        ambientDescriptionFa: 'هر صندلی رو به افق است: حرکت دوربین کل دیوار پانوراما، سایه نخل‌ها و آخرین نور روی آب را نشان می‌دهد.',
-        sqft: 2450,
-        exposure: 'West / Direct Sunset',
-        ceilingHeight: '16 Feet',
-        enablePauseGate: false,
-        hotspots: [
+        "id": "prop-1791108204838-room-5",
+        "name": "Sunset Panorama Wall",
+        "nameFa": "پانورامای غروب",
+        "shortName": "05. Panorama",
+        "shortNameFa": "۰۵. پانوراما",
+        "subtitle": "The camera drifts along 18 meters of uninterrupted ocean glass",
+        "subtitleFa": "دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند",
+        "icon": "Sun",
+        "startProgress": 0.71,
+        "endProgress": 0.86,
+        "totalFrames": 30,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch05.jpg",
+        "videoUrl": "video/Royal-Palm-Master.mp4",
+        "thumbnailUrl": "video/posters/ch05.jpg",
+        "ambientDescription": "Every seat owns the horizon: the drift reveals the full panorama wall, palm silhouettes and the last light on the water.",
+        "ambientDescriptionFa": "هر صندلی رو به افق است: حرکت دوربین کل دیوار پانوراما، سایه نخل‌ها و آخرین نور روی آب را نشان می‌دهد.",
+        "sqft": 2450,
+        "exposure": "West / Direct Sunset",
+        "ceilingHeight": "16 Feet",
+        "enablePauseGate": false,
+        "hotspots": [
           {
-            id: 'hs-panorama-glass',
-            x: 50,
-            y: 40,
-            frameRange: [2, 30],
-            title: '18-Meter Seamless Ocean Glass',
-            category: 'Architectural',
-            description: 'Sliding glass bays retract fully into pockets, converting the salon into an open-air pavilion in under a minute.',
-            spec: 'Motorized pocketing sliders, 110V',
-            priceTag: '$520,000'
+            "id": "hs-panorama-glass",
+            "x": 50,
+            "y": 40,
+            "frameRange": [
+              2,
+              30
+            ],
+            "title": "18-Meter Seamless Ocean Glass",
+            "category": "Architectural",
+            "description": "Sliding glass bays retract fully into pockets, converting the salon into an open-air pavilion in under a minute.",
+            "spec": "Motorized pocketing sliders, 110V",
+            "priceTag": "$520,000"
           }
         ],
-        materials: [
+        "materials": [
           {
-            id: 'mat-panorama-frame',
-            name: 'Bronze-Anodized Slider Frames',
-            category: 'Metals & Frames',
-            origin: 'Zurich, Switzerland',
-            finish: 'Micro-brushed 25-micron anodized',
-            description: 'Slim bronze sightlines keep the panorama photographically clean and resist salt-air corrosion.',
-            swatchUrl: 'video/posters/ch05.jpg',
-            spec: 'Qualicoat Class 3 architectural alloy',
-            x: 55,
-            y: 35
+            "id": "mat-panorama-frame",
+            "name": "Bronze-Anodized Slider Frames",
+            "category": "Metals & Frames",
+            "origin": "Zurich, Switzerland",
+            "finish": "Micro-brushed 25-micron anodized",
+            "description": "Slim bronze sightlines keep the panorama photographically clean and resist salt-air corrosion.",
+            "swatchUrl": "video/posters/ch05.jpg",
+            "spec": "Qualicoat Class 3 architectural alloy",
+            "x": 55,
+            "y": 35
           }
         ]
       },
-
-      /* ------------------------------------------ 06 EVENING FINALE */
       {
-        id: 'evening-finale',
-        name: 'Evening in the Salon',
-        nameFa: 'شب در سالن',
-        shortName: '06. Finale',
-        shortNameFa: '۰۶. پایان',
-        subtitle: 'Firelight, deep seating and the estate at its most cinematic hour',
-        subtitleFa: 'نور آتش، نشیمن گرم و سینمایی‌ترین ساعت عمارت',
-        icon: 'Flame',
-        ...ch(9.2, 10.0),
-        totalFrames: 24,
-        mediaType: 'mp4',
-        mediaUrl: 'video/posters/ch06.jpg',
-        videoUrl: MASTER_VIDEO,
-        thumbnailUrl: 'video/posters/ch06.jpg',
-        ambientDescription: 'The film closes on the salon at night: flames reflected in the glass, the Pacific gone deep blue, the residence fully itself.',
-        ambientDescriptionFa: 'فیلم با سالن در شب تمام می‌شود: بازتاب شعله‌ها روی شیشه، اقیانوس آبی عمیق و عمارت در اوج اقتدار.',
-        sqft: 2450,
-        exposure: 'West / Night Scene',
-        ceilingHeight: '16 Feet',
-        enablePauseGate: false,
-        hotspots: [
+        "id": "prop-1791108204838-room-6",
+        "name": "Evening in the Salon",
+        "nameFa": "شب در سالن",
+        "shortName": "06. Finale",
+        "shortNameFa": "۰۶. پایان",
+        "subtitle": "Firelight, deep seating and the estate at its most cinematic hour",
+        "subtitleFa": "نور آتش، نشیمن گرم و سینمایی‌ترین ساعت عمارت",
+        "icon": "Flame",
+        "startProgress": 0.86,
+        "endProgress": 1,
+        "totalFrames": 24,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch06.jpg",
+        "videoUrl": "video/Royal-Palm-Master.mp4",
+        "thumbnailUrl": "video/posters/ch06.jpg",
+        "ambientDescription": "The film closes on the salon at night: flames reflected in the glass, the Pacific gone deep blue, the residence fully itself.",
+        "ambientDescriptionFa": "فیلم با سالن در شب تمام می‌شود: بازتاب شعله‌ها روی شیشه، اقیانوس آبی عمیق و عمارت در اوج اقتدار.",
+        "sqft": 2450,
+        "exposure": "West / Night Scene",
+        "ceilingHeight": "16 Feet",
+        "enablePauseGate": false,
+        "hotspots": [
           {
-            id: 'hs-finale-night',
-            x: 52,
-            y: 58,
-            frameRange: [2, 24],
-            title: 'Evening Scene Programming',
-            category: 'Technology',
-            description: 'One tap shifts the estate to its night scene: fires ignite, cove lighting warms, and the panorama glows against the dark.',
-            spec: 'Lutron HomeWorks scene engine',
-            priceTag: '$85,000'
+            "id": "hs-finale-night",
+            "x": 52,
+            "y": 58,
+            "frameRange": [
+              2,
+              24
+            ],
+            "title": "Evening Scene Programming",
+            "category": "Technology",
+            "description": "One tap shifts the estate to its night scene: fires ignite, cove lighting warms, and the panorama glows against the dark.",
+            "spec": "Lutron HomeWorks scene engine",
+            "priceTag": "$85,000"
           }
         ],
-        materials: [
+        "materials": [
           {
-            id: 'mat-finale-brass',
-            name: 'Aged Brass Accent Hardware',
-            category: 'Metals & Hardware',
-            origin: 'Florence, Italy',
-            finish: 'Living finish, unlacquered',
-            description: 'Unlacquered brass details catch the firelight and deepen gracefully with the coastal air.',
-            swatchUrl: 'video/posters/ch06.jpg',
-            spec: 'Solid C260 brass, hand-patinated',
-            x: 45,
-            y: 60
+            "id": "mat-finale-brass",
+            "name": "Aged Brass Accent Hardware",
+            "category": "Metals & Hardware",
+            "origin": "Florence, Italy",
+            "finish": "Living finish, unlacquered",
+            "description": "Unlacquered brass details catch the firelight and deepen gracefully with the coastal air.",
+            "swatchUrl": "video/posters/ch06.jpg",
+            "spec": "Solid C260 brass, hand-patinated",
+            "x": 45,
+            "y": 60
           }
         ]
       }
     ],
-    broker: {
-      name: 'Alexandra Whitmore',
-      title: 'Senior Global Estate Advisor',
-      agency: 'Whitmore & Partners Estates, Montecito',
-      phone: '+1 (805) 555-0148',
-      email: 'a.whitmore@whitmoreestates.com',
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80'
+    "broker": {
+      "name": "Alexandra Whitmore",
+      "title": "Senior Vice President of Luxury Estates",
+      "agency": "Whitmore & Partners Estates, Montecito",
+      "phone": "+1 (805) 555-0148",
+      "email": "a.whitmore@whitmoreestates.com",
+      "avatar": "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80"
+    }
+  },
+  {
+    "id": "royal-palm-estate",
+    "title": "Royal Palm Estate",
+    "subtitle": "Oceanfront Modern Masterpiece • 1.4-Acre Private Bluff",
+    "tagline": "Where Architecture Meets the Horizon",
+    "location": "Montecito, California",
+    "price": "$34,900,000",
+    "numericPrice": 34900000,
+    "currency": "USD",
+    "beds": 6,
+    "baths": 9,
+    "sqft": 13400,
+    "mlsNumber": "MT-90210-ROYAL",
+    "architect": "Atelier Pacific Design Group",
+    "yearBuilt": 2025,
+    "heroImage": "video/posters/ch01.jpg",
+    "rooms": [
+      {
+        "id": "twilight-approach",
+        "name": "Twilight Pool Approach",
+        "nameFa": "ورود غروب از روی استخر",
+        "shortName": "01. Approach",
+        "shortNameFa": "۰۱. ورود",
+        "subtitle": "Gliding across the vanishing-edge pool toward the illuminated glass façade",
+        "subtitleFa": "حرکت روی استخر بی‌نهایت به سمت نمای شیشه‌ای نورانی",
+        "icon": "Compass",
+        "startProgress": 0,
+        "endProgress": 0.08,
+        "totalFrames": 72,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch01.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/raw/refs/heads/Javad00077-patch-1/Exterior%20Approach%20&%20Heliport1.mp4",
+        "thumbnailUrl": "video/posters/ch01.jpg",
+        "ambientDescription": "The film opens at blue hour: the camera skims the mirror-calm infinity pool, the residence glowing in layered cove lighting beyond the water.",
+        "ambientDescriptionFa": "فیلم در ساعت آبی آغاز می‌شود؛ دوربین روی آب آرام استخر بی‌نهایت سُر می‌خورد و عمارت با نورپردازی پنهان در آن‌سوی آب می‌درخشد.",
+        "sqft": 4200,
+        "exposure": "West / Pacific Sunset",
+        "ceilingHeight": "Open Air",
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-facade-glass",
+            "x": 52,
+            "y": 38,
+            "frameRange": [
+              18,
+              70
+            ],
+            "title": "Floor-to-Ceiling Glass Curtain Wall",
+            "category": "Architectural",
+            "description": "A seamless 40-meter glazed façade engineered for coastal salt air, dissolving the boundary between pool terrace and great room.",
+            "spec": "Coastal-Rated Low-E Glazing System",
+            "priceTag": "$1,850,000"
+          },
+          {
+            "id": "hs-cove-lighting",
+            "x": 30,
+            "y": 55,
+            "frameRange": [
+              8,
+              60
+            ],
+            "title": "Architectural Cove Lighting Scene",
+            "category": "Design",
+            "description": "Programmable Lutron scene lighting traces the roofline and pool basin, choreographed to dusk for maximum drama.",
+            "spec": "Ketra Full-Spectrum tunable LEDs",
+            "priceTag": "$120,000"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-pool-basin",
+            "name": "Midnight Quartz Pool Interior",
+            "category": "Pool Finishes",
+            "origin": "Vicenza, Italy",
+            "finish": "Hand-troweled exposed aggregate",
+            "description": "A deep sapphire-quartz finish turns the pool into liquid onyx at dusk, mirroring the illuminated residence.",
+            "swatchUrl": "video/posters/ch01.jpg",
+            "spec": "Exposed aggregate, 10-year warranty",
+            "ecoCert": "NSF/ANSI 50 Certified",
+            "x": 35,
+            "y": 78
+          },
+          {
+            "id": "mat-terrace-stone",
+            "name": "Honed Basalt Pool Deck",
+            "category": "Stone & Cladding",
+            "origin": "Xiamen, China",
+            "finish": "Honed, heat-resistant",
+            "description": "Velvet-smooth volcanic basalt stays cool underfoot beside the water and deepens the monolithic palette.",
+            "swatchUrl": "video/posters/ch02.jpg",
+            "spec": "20mm pavers, Mohs 6.5",
+            "x": 68,
+            "y": 82
+          }
+        ]
+      },
+      {
+        "id": "grand-salon",
+        "name": "Oceanfront Grand Salon",
+        "nameFa": "سالن بزرگ رو به اقیانوس",
+        "shortName": "04. Great Room",
+        "shortNameFa": "۰۴. سالن",
+        "subtitle": "Sunken lounge, fire tables and the concert piano beneath the ocean panorama",
+        "subtitleFa": "لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس",
+        "icon": "Tv",
+        "startProgress": 0.08,
+        "endProgress": 0.15,
+        "totalFrames": 63,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch04.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Greatroom.mp4",
+        "thumbnailUrl": "video/posters/ch04.jpg",
+        "ambientDescription": "The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.",
+        "ambientDescriptionFa": "قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.",
+        "sqft": 2450,
+        "exposure": "Full West / Ocean Panorama",
+        "ceilingHeight": "16 Feet",
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-fire-tables",
+            "x": 55,
+            "y": 62,
+            "frameRange": [
+              6,
+              60
+            ],
+            "title": "Sculptural Fire Tables",
+            "category": "Design",
+            "description": "Cast-stone fire tables anchor the conversation pits, mixing live flame with the cool palette of stone and linen.",
+            "spec": "Linear ethanol burners, remote modulated",
+            "priceTag": "$72,000"
+          },
+          {
+            "id": "hs-piano",
+            "x": 76,
+            "y": 55,
+            "frameRange": [
+              10,
+              63
+            ],
+            "title": "Concert Grand Piano",
+            "category": "Design",
+            "description": "A polished grand piano sits on the ocean axis — the salon doubles as an intimate recital hall at sunset.",
+            "spec": "Full-size concert grand, ivory finish",
+            "priceTag": "$190,000"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-salon-boucle",
+            "name": "Ivory Bouclé Lounge Seating",
+            "category": "Fabrics & Upholstery",
+            "origin": "Piedmont, Italy",
+            "finish": "Heavy loop weave, feather-wrapped",
+            "description": "Modular bouclé sofas wrap the fire pits in soft, tactile ivory — comfort engineered to the tune of 100,000 rubs.",
+            "swatchUrl": "video/posters/ch04.jpg",
+            "spec": "100,000 Martindale rubs",
+            "x": 35,
+            "y": 66
+          },
+          {
+            "id": "mat-salon-ceiling",
+            "name": "Battened Oak Ceiling",
+            "category": "Wood & Joinery",
+            "origin": "Fontainebleau, France",
+            "finish": "Smoked, ultra-matte",
+            "description": "Slim oak battens space the ceiling and conceal linear AC and acoustic damping above the salon.",
+            "swatchUrl": "video/posters/ch05.jpg",
+            "spec": "FSC oak, acoustic felt backing",
+            "x": 60,
+            "y": 28
+          }
+        ]
+      },
+      {
+        "id": "facade-reveal",
+        "name": "Glass Façade Reveal",
+        "nameFa": "نمای شیشه‌ای و ورودی",
+        "shortName": "02. Façade",
+        "shortNameFa": "۰۲. نما",
+        "subtitle": "The full modern pavilion comes into frame across the reflecting water",
+        "subtitleFa": "نمای کامل عمارت مدرن در قاب آب انعکاسی",
+        "icon": "Sun",
+        "startProgress": 0.15,
+        "endProgress": 0.23,
+        "totalFrames": 69,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch02.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Master.mp4",
+        "thumbnailUrl": "video/posters/ch02.jpg",
+        "ambientDescription": "The approach widens: symmetrical pavilions, floating roof planes and the glass great room arrive together in one composed frame.",
+        "ambientDescriptionFa": "زاویه باز می‌شود: پاویون‌های متقارن، سقف‌های شناور و گریت‌روم شیشه‌ای در یک قاب واحد ظاهر می‌شوند.",
+        "sqft": 13400,
+        "exposure": "West / Panoramic Ocean",
+        "ceilingHeight": "Open Air",
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-floating-roof",
+            "x": 50,
+            "y": 30,
+            "frameRange": [
+              10,
+              65
+            ],
+            "title": "Cantilevered Roof Planes",
+            "category": "Architectural",
+            "description": "Deep roof overhangs appear to float on razor-thin fascia lines, shading the glass while framing ocean views.",
+            "spec": "Steel moment-frame, 4m cantilever",
+            "priceTag": "$640,000"
+          },
+          {
+            "id": "hs-royal-palm-brand",
+            "x": 62,
+            "y": 42,
+            "frameRange": [
+              20,
+              69
+            ],
+            "title": "ROYAL PALM Brand Film",
+            "category": "Design",
+            "description": "This master film is the estate’s signature brand asset — the same footage powers every chapter of the interactive tour.",
+            "spec": "Master 720p30, all-intra keyframes",
+            "priceTag": "Signature Asset"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-stucco-white",
+            "name": "Mineral White Render",
+            "category": "Stone & Cladding",
+            "origin": "Stuttgart, Germany",
+            "finish": "Fine aggregate, hand-floated",
+            "description": "Breathable mineral stucco keeps the volumes crisp white through coastal humidity without cracking.",
+            "swatchUrl": "video/posters/ch02.jpg",
+            "spec": "Class A fire rated",
+            "x": 30,
+            "y": 45
+          },
+          {
+            "id": "mat-reflecting-edge",
+            "name": "Vanishing-Edge Weir Wall",
+            "category": "Pool Finishes",
+            "origin": "Custom cast-in-place",
+            "finish": "Polished white precast",
+            "description": "A knife-edge weir lets the pool surface merge with the horizon line from every principal room.",
+            "swatchUrl": "video/posters/ch01.jpg",
+            "spec": "Cast-in-place structural acrylic interface",
+            "x": 45,
+            "y": 80
+          }
+        ]
+      },
+      {
+        "id": "salon-panorama",
+        "name": "Sunset Panorama Wall",
+        "nameFa": "پانورامای غروب",
+        "shortName": "05. Panorama",
+        "shortNameFa": "۰۵. پانوراما",
+        "subtitle": "The camera drifts along 18 meters of uninterrupted ocean glass",
+        "subtitleFa": "دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند",
+        "icon": "Sun",
+        "startProgress": 0.23,
+        "endProgress": 0.31,
+        "totalFrames": 30,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch05.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/main/Kitchen.mp4",
+        "thumbnailUrl": "video/posters/ch05.jpg",
+        "ambientDescription": "Every seat owns the horizon: the drift reveals the full panorama wall, palm silhouettes and the last light on the water.",
+        "ambientDescriptionFa": "هر صندلی رو به افق است: حرکت دوربین کل دیوار پانوراما، سایه نخل‌ها و آخرین نور روی آب را نشان می‌دهد.",
+        "sqft": 2450,
+        "exposure": "West / Direct Sunset",
+        "ceilingHeight": "16 Feet",
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-panorama-glass",
+            "x": 50,
+            "y": 40,
+            "frameRange": [
+              2,
+              30
+            ],
+            "title": "18-Meter Seamless Ocean Glass",
+            "category": "Architectural",
+            "description": "Sliding glass bays retract fully into pockets, converting the salon into an open-air pavilion in under a minute.",
+            "spec": "Motorized pocketing sliders, 110V",
+            "priceTag": "$520,000"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-panorama-frame",
+            "name": "Bronze-Anodized Slider Frames",
+            "category": "Metals & Frames",
+            "origin": "Zurich, Switzerland",
+            "finish": "Micro-brushed 25-micron anodized",
+            "description": "Slim bronze sightlines keep the panorama photographically clean and resist salt-air corrosion.",
+            "swatchUrl": "video/posters/ch05.jpg",
+            "spec": "Qualicoat Class 3 architectural alloy",
+            "x": 55,
+            "y": 35
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791306892876",
+        "name": "Private Suite 7",
+        "nameFa": "Suite 7",
+        "shortName": "07. Suite",
+        "shortNameFa": "07. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.31,
+        "endProgress": 0.38,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/main/Patio.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791306892876",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791306892876",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791309727380",
+        "name": "Private Suite 10",
+        "nameFa": "Suite 10",
+        "shortName": "010. Suite",
+        "shortNameFa": "010. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.38,
+        "endProgress": 0.46,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Office.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791309727380",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791309727380",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791306948068",
+        "name": "Private Suite 8",
+        "nameFa": "Suite 8",
+        "shortName": "08. Suite",
+        "shortNameFa": "08. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.46,
+        "endProgress": 0.54,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Pool.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791306948068",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791306948068",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791310396458",
+        "name": "Private Suite 12",
+        "nameFa": "Suite 12",
+        "shortName": "012. Suite",
+        "shortNameFa": "012. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.54,
+        "endProgress": 0.62,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Br2.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791310396458",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791310396458",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "threshold-entry",
+        "name": "The Threshold Entry",
+        "nameFa": "آستانه ورودی شیشه‌ای",
+        "shortName": "03. Entry",
+        "shortNameFa": "۰۳. ورودی",
+        "subtitle": "Crossing the glass line into the warm ocean-view interior",
+        "subtitleFa": "عبور از خط شیشه به فضای گرم داخل",
+        "icon": "Flame",
+        "startProgress": 0.62,
+        "endProgress": 0.69,
+        "totalFrames": 42,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch03.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Backyard.mp4",
+        "thumbnailUrl": "video/posters/ch03.jpg",
+        "ambientDescription": "The cut lands inside the entry gallery: the same dusk sky now framed by the interior, water views pulling straight through the house.",
+        "ambientDescriptionFa": "نما داخلی می‌شود: همان آسمان غروب حالا از داخل قاب شده و نمای آب مستقیم از یک‌سوی خانه به سوی دیگر ادامه دارد.",
+        "sqft": 900,
+        "exposure": "South / Ocean Axis",
+        "ceilingHeight": "14 Feet",
+        "isHub": true,
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-entry-axis",
+            "x": 48,
+            "y": 50,
+            "frameRange": [
+              4,
+              40
+            ],
+            "title": "Straight-Line Ocean Axis",
+            "category": "Architectural",
+            "description": "Entry, gallery and great room share one unbroken sightline to the Pacific — the estate’s organizing gesture.",
+            "spec": "Aligned structural bays, zero mullions",
+            "priceTag": "Signature Gesture"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-entry-oak",
+            "name": "Wide-Plank White Oak Floors",
+            "category": "Flooring",
+            "origin": "Appalachians, USA",
+            "finish": "Natural matte hardwax oil",
+            "description": "Continuous oak runs from threshold to great room, hiding expansion joints for an unbroken plane.",
+            "swatchUrl": "video/posters/ch03.jpg",
+            "spec": "260mm engineered plank",
+            "x": 40,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "evening-finale",
+        "name": "Evening in the Salon",
+        "nameFa": "شب در سالن",
+        "shortName": "06. Finale",
+        "shortNameFa": "۰۶. پایان",
+        "subtitle": "Firelight, deep seating and the estate at its most cinematic hour",
+        "subtitleFa": "نور آتش، نشیمن گرم و سینمایی‌ترین ساعت عمارت",
+        "icon": "Flame",
+        "startProgress": 0.69,
+        "endProgress": 0.77,
+        "totalFrames": 24,
+        "mediaType": "mp4",
+        "mediaUrl": "video/posters/ch06.jpg",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Br1.mp4",
+        "thumbnailUrl": "video/posters/ch06.jpg",
+        "ambientDescription": "The film closes on the salon at night: flames reflected in the glass, the Pacific gone deep blue, the residence fully itself.",
+        "ambientDescriptionFa": "فیلم با سالن در شب تمام می‌شود: بازتاب شعله‌ها روی شیشه، اقیانوس آبی عمیق و عمارت در اوج اقتدار.",
+        "sqft": 2450,
+        "exposure": "West / Night Scene",
+        "ceilingHeight": "16 Feet",
+        "enablePauseGate": false,
+        "hotspots": [
+          {
+            "id": "hs-finale-night",
+            "x": 52,
+            "y": 58,
+            "frameRange": [
+              2,
+              24
+            ],
+            "title": "Evening Scene Programming",
+            "category": "Technology",
+            "description": "One tap shifts the estate to its night scene: fires ignite, cove lighting warms, and the panorama glows against the dark.",
+            "spec": "Lutron HomeWorks scene engine",
+            "priceTag": "$85,000"
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-finale-brass",
+            "name": "Aged Brass Accent Hardware",
+            "category": "Metals & Hardware",
+            "origin": "Florence, Italy",
+            "finish": "Living finish, unlacquered",
+            "description": "Unlacquered brass details catch the firelight and deepen gracefully with the coastal air.",
+            "swatchUrl": "video/posters/ch06.jpg",
+            "spec": "Solid C260 brass, hand-patinated",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791309064015",
+        "name": "Private Suite 9",
+        "nameFa": "Suite 9",
+        "shortName": "09. Suite",
+        "shortNameFa": "09. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.77,
+        "endProgress": 0.85,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Garage.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791309064015",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791309064015",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791310121060",
+        "name": "Private Suite 11",
+        "nameFa": "Suite 11",
+        "shortName": "011. Suite",
+        "shortNameFa": "011. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.85,
+        "endProgress": 0.92,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Laundry%20Room.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791310121060",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791310121060",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "id": "room-custom-1791310430560",
+        "name": "Private Suite 13",
+        "nameFa": "Suite 13",
+        "shortName": "013. Suite",
+        "shortNameFa": "013. Suite",
+        "subtitle": "Luxury bespoke living space",
+        "subtitleFa": "Luxury bespoke living space",
+        "icon": "BedDouble",
+        "startProgress": 0.92,
+        "endProgress": 1,
+        "totalFrames": 90,
+        "mediaType": "mp4",
+        "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+        "videoUrl": "video/Royal-Palm-Master.mp4",
+        "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+        "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+        "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+        "sqft": 1200,
+        "exposure": "South / West",
+        "ceilingHeight": "3.6m",
+        "hotspots": [
+          {
+            "id": "hs-1791310430560",
+            "x": 50,
+            "y": 50,
+            "frameRange": [
+              10,
+              70
+            ],
+            "title": "Custom Italian Joinery",
+            "titleFa": "Custom Italian Walnut Millwork",
+            "category": "Design",
+            "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+            "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+          }
+        ],
+        "materials": [
+          {
+            "id": "mat-1791310430560",
+            "name": "Calacatta Borghini Marble",
+            "nameFa": "Calacatta Borghini Marble",
+            "category": "Stone & Marble",
+            "origin": "Carrara, Tuscany, Italy",
+            "finish": "Silk Satin Honed",
+            "description": "Prestigious white marble with honey gold veining.",
+            "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+            "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+            "spec": "20mm Slab",
+            "x": 45,
+            "y": 60
+          }
+        ]
+      }
+    ],
+    "broker": {
+      "name": "Alexandra Whitmore",
+      "title": "Senior Global Estate Advisor",
+      "agency": "Whitmore & Partners Estates, Montecito",
+      "phone": "+1 (805) 555-0148",
+      "email": "kazeme.javad@gmail.com",
+      "avatar": "video/posters/ch01.jpg"
     }
   }
 ];
-
-/**
- * Motion defaults tuned for the single-master-film walkthrough:
- * - scrubSmoothing 1.6 → fast-reacting inertia (progress chases the wheel)
- * - scrollSpeedFactor 0.5 → one full film pass ≈ one comfortable mouse-wheel sweep
- * - gates OFF by default so the scrub is never interrupted (configurable in Admin)
- */
-export const DEFAULT_CONFIG: PluginConfig = {
-  scrubSmoothing: 1.6,
-  pinThreshold: 0.94,
-  accentTheme: 'champagne',
-  enableWorkerPool: true,
-  enableReturnMatrix: true,
-  defaultFullscreen: false,
-  enableGlobalCheckpointGates: false,
-  glassOpacity: 0.18,
-  enableSoundScape: true,
-  cacheBufferThreshold: 25,
-  liteSpeedSafe: true,
-  language: 'en',
-  autoplaySpeed: 0.6,
-  scrollSpeedFactor: 0.5,
-  cssPrefix: 'vbt-t-',
-  glassBlur: 20
-};
