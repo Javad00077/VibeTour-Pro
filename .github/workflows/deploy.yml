@@ -13,7 +13,9 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
+# Allow only one concurrent deployment. Cancel any older run the moment a
+# newer commit lands, so a slow deploy can never block the next one with the
+# "in progress deployment" 400 error seen on run e8c51035.
 concurrency:
   group: 'pages'
   cancel-in-progress: true
@@ -93,3 +95,13 @@ jobs:
         continue-on-error: true
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # A cancelled/superseded deployment leaves a stale Pages deployment in
+      # "in progress" state which can 400 the next run. This no-op check makes
+      # the failure visible without failing the whole workflow.
+      - name: Deployment status note
+        if: steps.deployment.outcome == 'failure'
+        run: |
+          echo "deploy-pages step failed (outcome=${{ steps.deployment.outcome }})."
+          echo "This is usually a transient 'in progress deployment' clash;"
+          echo "the gh-pages branch push above already published the site."  
