@@ -437,6 +437,10 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       // CORS mode before src — unknown hosts stream WITHOUT crossOrigin, so
       // ANY video link (cinematic long-GOP included) loads and scrubs.
       applyVideoCrossOrigin(el, resolved);
+      // Socket priority: the chamber on screen gets the first bytes; the
+      // metadata-tier background clips yield their bandwidth to it.
+      (el as HTMLVideoElement & { fetchPriority?: 'high' | 'low' | 'auto' }).fetchPriority =
+        tier === 'auto' ? 'high' : 'low';
       el.src = resolved;
       el.load();
     };
@@ -480,18 +484,34 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     };
   }, [property.rooms, activeRoom.id, allRoomsShareVideo, resolveCandidates, installCandidateFallback]);
 
-  // Attach & warm the master video element so the first scroll tick paints instantly
+  // Attach & warm the master video element so the first scroll tick paints
+  // instantly. Warm-up = a ~250ms micro-play at the clip's own clock: playing
+  // forces the decoder to push consecutive frames into the pipeline (seeking
+  // alone can leave the first GOP undecoded), so the very first scroll pixels
+  // are already on the canvas and the scrub feels smooth from tick one.
   useEffect(() => {
     if (!allRoomsShareVideo) return;
     const vid = masterVideoRef.current;
     if (!vid) return;
+    let timer = 0;
     const warm = () => {
       try {
         vid.currentTime = 0.001;
       } catch {}
+      vid.play().then(() => {
+        timer = window.setTimeout(() => {
+          try { vid.pause(); } catch {}
+        }, 250);
+      }).catch(() => {
+        // Gesture policy or decode hiccup — the scrub engine still works;
+        // the first scroll just warms the decoder itself.
+      });
     };
     if (vid.readyState >= 1) warm();
     else vid.addEventListener('loadeddata', warm, { once: true });
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
   }, [allRoomsShareVideo]);
 
   // Map icon names
@@ -526,18 +546,27 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       : { room: rooms[rooms.length - 1], index: rooms.length - 1 };
   }, [property.rooms]);
 
-  // Preload poster images and show buffer shimmer
+  // Preload poster images and show buffer shimmer.
+  // PERCEIVED-LOAD OPTIMIZATION: the shimmer only counts the FIRST chamber's
+  // poster (the pixels the visitor actually lands on) — the remaining posters
+  // still load, but in the background WITHOUT gating the UI. Before this, a
+  // 10-room tour waited on 10 poster fetches before scroll unlocked.
   useEffect(() => {
     setIsBufferReady(false);
     setBufferProgress(15);
     let loadedCount = 0;
     const total = Math.max(1, property.rooms.length);
+    const firstReady = () => {
+      setBufferProgress(40);
+      setIsBufferReady(true);
+    };
 
-    property.rooms.forEach((room) => {
+    property.rooms.forEach((room, idx) => {
       // Already promoted for THIS poster URL → instant count, zero re-fetch.
       if (posterPromotedRef.current.get(room.id) === room.mediaUrl) {
         loadedCount++;
         setBufferProgress(Math.round((loadedCount / total) * 100));
+        if (idx === 0) firstReady();
         return;
       }
       const onDone = (loadedVia: string) => {
@@ -547,19 +576,21 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         posterPromotedRef.current.set(room.id, loadedVia);
         loadedCount++;
         const pct = Math.round((loadedCount / total) * 100);
-        setBufferProgress(pct);
-        if (pct >= 20) {
-          setIsBufferReady(true);
+        setBufferProgress(Math.max(pct, 40));
+        if (loadedCount === 1) {
+          // First poster in → unlock scroll immediately; the rest stream in.
+          firstReady();
         }
       };
 
       imgForUrl(room.mediaUrl, () => onDone(room.mediaUrl));
     });
 
+    // Hard cap: never hold the tour hostage for slow posters.
     const timer = setTimeout(() => {
       setIsBufferReady(true);
       setBufferProgress(100);
-    }, 2500);
+    }, 1200);
 
     return () => clearTimeout(timer);
   }, [property.rooms]);
@@ -1451,7 +1482,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
       {/* Preloading Buffer Shimmer */}
       {!isBufferReady && (
-        <div className="absolute inset-0 z-40 bg-[#090a0f]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 sm:p-8 transition-opacity duration-500">
+        <div aria-busy="true" aria-live="polite" className="absolute inset-0 z-40 bg-[#090a0f]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 sm:p-8 transition-opacity duration-500">
           <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-4">
             <div className="absolute inset-0 rounded-full border-2 border-[#c5a880]/20 animate-ping opacity-30"></div>
             <div className="absolute inset-0 rounded-full border-2 border-t-[#c5a880] border-r-transparent border-b-[#c5a880]/40 border-l-transparent animate-spin"></div>
