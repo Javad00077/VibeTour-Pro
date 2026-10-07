@@ -125,7 +125,11 @@ export async function putRepoFile(path: string, content: string, message: string
       // non-JSON error body
     }
     const reason = detail?.message || res.statusText || `HTTP ${res.status}`;
-    throw new Error(`${reason}${res.status === 401 || res.status === 403 ? ' (توکن نامعتبر یا فاقد دسترسی repo)' : ''}`);
+    const github403ScopeBlock =
+      res.status === 403 && typeof detail === 'object' && detail?.message === 'Resource not accessible by personal access token'
+        ? ' — این PAT دامنه‌های Files/Contents را ندارد (فین‌گرین PAT معمولاً فقط Read دارند). مخفف PAT github_pat_ به repo/write نیاز دارد یا یک Token کلاسیک با کلید repo.'
+        : '';
+    throw new Error(`${reason}${github403ScopeBlock}`);
   }
 }
 
