@@ -22,7 +22,11 @@ export const PLAY_RATE_FLOOR = 0.05;
 export const MAX_PLAY_RATE = 4;
 
 // Proportional gain folding the residual gap into the playback rate.
-export const STEER_GAIN = 2.0;
+// KEYFRAME-FREE MODE: raised from 2.0 to 3.2 so wide gaps are closed with
+// playbackRate steering (smooth) instead of repeated hard seeks (stutters).
+export const STEER_GAIN_KF = 3.2;
+// Legacy alias kept for the unit tests and any external callers.
+export const STEER_GAIN = STEER_GAIN_KF;
 
 // Retries of a hard seek are throttled to 4/s per clip.
 export const HARD_SEEK_INTERVAL_MS = 250;
@@ -64,7 +68,12 @@ export function decideScrub(state: ScrubState): ScrubAction {
 
   // Hard-seek window: steering covers small gaps smoothly; anything beyond it
   // (fling / chapter jump / far reverse) snaps once, then steering resumes.
-  const fwdHard = Math.min(1.5, Math.max(0.3, dur * 0.02));
+  // KEYFRAME-FREE MODE: the window is deliberately WIDE (up to 6s forward).
+  // Long-GOP clips (no per-frame keyframes) stall on hard seeks — every seek
+  // waits for the next I-frame — so we prefer to keep PLAYING and steer with
+  // playbackRate (consecutive frames = fluid motion). The 6s cap keeps the
+  // clip from racing absurdly far ahead before we snap once.
+  const fwdHard = Math.min(6, Math.max(0.3, dur * 0.1));
   const backHard = Math.min(0.5, Math.max(0.2, dur * 0.008));
   const rescue = error < -backHard * 3;
 
@@ -83,7 +92,9 @@ export function decideScrub(state: ScrubState): ScrubAction {
   }
 
   // No floor: a rate under PLAY_RATE_FLOOR is not worth decoding.
-  const rate = Math.max(0, Math.min(MAX_PLAY_RATE, velocity + error * STEER_GAIN));
+  // KEYFRAME-FREE: the steer gain is raised so the clip catches up quickly but
+  // smoothly (rate stays consecutive, no seek stalls). Rate cap still 4x.
+  const rate = Math.max(0, Math.min(MAX_PLAY_RATE, velocity + error * STEER_GAIN_KF));
 
   if (rate < PLAY_RATE_FLOOR) {
     // Aligned with the target (or idle): hold the decoded frame — the canvas
