@@ -62,7 +62,7 @@ import {
 } from '../services/globalPublishService';
 import { MediaLibraryModal, SAMPLE_WP_MEDIA } from './MediaLibraryModal';
 import { soundEngine } from '../utils/audioSynth';
-import { analyzeAndConvertVideoUrl, VideoUrlAnalysis, isStaticHost } from '../utils/videoUrlHelper';
+import { analyzeAndConvertVideoUrl, VideoUrlAnalysis, isStaticHost, shouldRequestCors } from '../utils/videoUrlHelper';
 
 interface AdminDashboardProps {
   properties: PropertyListing[];
@@ -2102,7 +2102,10 @@ Manage properties, configure broker profiles, and customize marketing copy acros
                         <video
                           key={activePreviewUrl}
                           src={activePreviewUrl}
-                          crossOrigin="anonymous"
+                          // Same CORS rule as the walkthrough player: only
+                          // CORS-friendly hosts request "anonymous", so the
+                          // preview plays links from ANY host.
+                          crossOrigin={shouldRequestCors(activePreviewUrl) ? 'anonymous' : undefined}
                           controls
                           playsInline
                           className="w-full h-full object-cover"

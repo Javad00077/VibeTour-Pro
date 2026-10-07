@@ -24,6 +24,54 @@ export interface VideoUrlAnalysis {
   suggestion?: string;
 }
 
+/**
+ * Hosts that reliably serve `Access-Control-Allow-Origin: *` so media can be
+ * requested with crossOrigin="anonymous" (keeps the walkthrough canvas clean
+ * for hosts we know support it).
+ *
+ * EVERY other cross-origin host must be streamed WITHOUT the CORS attribute.
+ * A plain <video> element plays from any host, but requesting CORS from a
+ * server that does not send the headers FAILS THE LOAD OUTRIGHT — that was
+ * exactly why arbitrary (non-optimized / cinematic) video links could never
+ * be scroll-scrubbed: only the local HandBrake-optimized copies worked.
+ * Drawing a non-CORS video onto the canvas merely taints it (pixels cannot be
+ * read back); the walkthrough never reads pixels, so omitting the attribute
+ * is universally safe.
+ */
+const CORS_FRIENDLY_HOST_RE = /(^|\.)raw\.githubusercontent\.com$|(^|\.)github\.io$|(^|\.)objects\.githubusercontent\.com$/i;
+
+/**
+ * True when the URL may be fetched with crossOrigin="anonymous" without
+ * risking a load failure: same-origin (relative, blob, data) or a host known
+ * to send permissive CORS headers. Unknown cross-origin hosts → false.
+ */
+export function shouldRequestCors(url: string): boolean {
+  if (!url) return false;
+  if (/^(blob:|data:)/i.test(url)) return true; // same-origin by construction
+  if (!/^https?:\/\//i.test(url)) return true; // relative path → served by this origin
+  try {
+    const u = new URL(url);
+    if (typeof window !== 'undefined' && u.origin === window.location.origin) return true;
+    return CORS_FRIENDLY_HOST_RE.test(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Put a media element into the correct CORS mode BEFORE its src is assigned
+ * (the attribute must already be in place when resource selection happens).
+ * Passes `null` (= attribute removed) for unknown cross-origin hosts so the
+ * clip streams from literally any link. Safe to call repeatedly: it only
+ * touches the DOM when the mode actually changes.
+ */
+export function applyVideoCrossOrigin(el: HTMLVideoElement | HTMLImageElement, url: string): void {
+  const mode: 'anonymous' | null = shouldRequestCors(url) ? 'anonymous' : null;
+  if ((el.crossOrigin ?? null) !== mode) {
+    el.crossOrigin = mode;
+  }
+}
+
 /** True when the app runs on a static host without the Express backend (/api/*). */
 export function isStaticHost(): boolean {
   if (typeof window === 'undefined') return true;

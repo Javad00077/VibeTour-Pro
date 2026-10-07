@@ -29,8 +29,14 @@ import {
 } from 'lucide-react';
 import { PropertyListing, Room, Hotspot, MaterialItem, PluginConfig } from '../types';
 import { soundEngine } from '../utils/audioSynth';
-import { analyzeAndConvertVideoUrl } from '../utils/videoUrlHelper';
+import { analyzeAndConvertVideoUrl, applyVideoCrossOrigin, shouldRequestCors } from '../utils/videoUrlHelper';
 import { decideScrub } from '../utils/scrubEngine';
+import {
+  gsap,
+  prefersReducedMotion,
+  revealRoomTitle,
+  killTween
+} from '../utils/gsapScrollEngine';
 
 interface CanvasWalkthroughProps {
   property: PropertyListing;
@@ -189,6 +195,26 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   const activeGateProgressRef = useRef<number | null>(null);
   const dismissedGatesRef = useRef<Set<string>>(new Set());
 
+  // ── GSAP cinematic layer (keyframe-free scroll) ─────────────────────
+  // Title reveal + camera-drift tweens run on GSAP's own ticker; the video
+  // path stays untouched (scrubEngine still steers the clip), so ANY mp4 —
+  // even one with no usable keyframes — scrubbed smoothly.
+  const [roomTitleEl, setRoomTitleEl] = useState<HTMLElement | null>(null);
+  const titleTweenRef = useRef<gsap.core.Timeline | null>(null);
+  const reducedMotionRef = useRef<boolean>(typeof window !== 'undefined' && prefersReducedMotion());
+  // Last applied cinematic tilt — lets the render loop skip GSAP tween churn
+  // on idle frames (performance: no per-frame tween when the scroll settled).
+  const lastTiltRef = useRef<number>(0);
+
+  // Re-run the cinematic reveal whenever the active room (or the title DOM
+  // node) changes. killTween guards against a room change mid-flight.
+  useEffect(() => {
+    if (!roomTitleEl || !activeRoom) return;
+    killTween(titleTweenRef.current);
+    titleTweenRef.current = revealRoomTitle(roomTitleEl, reducedMotionRef.current);
+    return () => killTween(titleTweenRef.current);
+  }, [roomTitleEl, activeRoom?.id]);
+
   useEffect(() => {
     scrollSpeedRef.current = scrollSpeed;
   }, [scrollSpeed]);
@@ -254,6 +280,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
   // Attach a fallback walker: on load error, advance to the next candidate
   // (proxy → raw → CDN alternative) instead of dying on the first failure.
+  // Candidates can live on DIFFERENT hosts, so the CORS mode is re-applied
+  // per candidate before its src (anonymous ↔ plain streaming), matching the
+  // initial assignment logic.
   const installCandidateFallback = useCallback((el: HTMLVideoElement, key: string) => {
     el.onerror = () => {
       const list = resolvedCandidatesRef.current.get(key) || [];
@@ -261,6 +290,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       if (idx < list.length) {
         el.dataset.candidateIdx = String(idx);
         el.dataset.currentStreamUrl = list[idx];
+        applyVideoCrossOrigin(el, list[idx]);
         el.src = list[idx];
         el.load();
       }
@@ -306,7 +336,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       let img = imageCacheRef.current.get(src);
       if (!img) {
         img = new Image();
-        img.crossOrigin = 'anonymous'; // required for drawImage onto the canvas
+        // CORS mode only for hosts that send the headers — a plain <img> loads
+        // from any host, and the walkthrough never reads canvas pixels back.
+        if (shouldRequestCors(src)) img.crossOrigin = 'anonymous';
         imageCacheRef.current.set(src, img);
         img.src = src;
         const fail = () => {
@@ -356,6 +388,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         vid.dataset.currentStreamUrl = resolved;
         vid.dataset.candidateIdx = '0';
         resolvedCandidatesRef.current.set('__master__', candidates);
+        // CORS mode must be settled BEFORE the src so resource selection obeys
+        // it — unknown hosts stream WITHOUT crossOrigin (any link plays).
+        applyVideoCrossOrigin(vid, resolved);
         // URL changed → drop the sticky latch so the poster shows until the
         // new source delivers its first decodable frame, and reset the
         // smooth-scrub state so the steering loop starts clean
@@ -399,6 +434,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       pendingSeekMapRef.current.delete(room.id);
       lastTargetTimeMapRef.current.delete(room.id);
       installCandidateFallback(el, room.id);
+      // CORS mode before src — unknown hosts stream WITHOUT crossOrigin, so
+      // ANY video link (cinematic long-GOP included) loads and scrubs.
+      applyVideoCrossOrigin(el, resolved);
       el.src = resolved;
       el.load();
     };
@@ -848,6 +886,26 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       }
       if (depthDisplayRef.current) {
         depthDisplayRef.current.textContent = `${Math.round(currentProg * 100)}% TOUR DEPTH`;
+      }
+
+      // GSAP cinematic layer: subtle camera drift tied to scroll velocity.
+      // Applied to the CANVAS transform only — the video decode path,
+      // scrubEngine decisions, and the DOM overlay are untouched, so this
+      // stays "attractive but never fights the scrub".
+      if (!reducedMotionRef.current && canvasRef.current) {
+        const tilt = Math.max(-1.4, Math.min(1.4, (targetProgressRef.current - currentProg) * 26));
+        // Idle guard: only retarget the tween while the tilt is moving or was
+        // moving last frame (lets the settle-tween finish, then stops churning)
+        if (Math.abs(tilt) > 0.004 || Math.abs(lastTiltRef.current) > 0.004) {
+          gsap.to(canvasRef.current, {
+            scale: 1.045 + Math.abs(tilt) * 0.006,
+            rotate: tilt * 0.12,
+            duration: 0.4,
+            ease: 'power2.out',
+            overwrite: 'auto'
+          });
+        }
+        lastTiltRef.current = tilt;
       }
 
       // Check current room
@@ -1352,7 +1410,6 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               if (el) roomVideoRefs.current.set('__master__', el);
             }}
             data-room-id="__master__"
-            crossOrigin="anonymous"
             muted
             playsInline
             preload="auto"
@@ -1371,7 +1428,6 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 roomVideoRefs.current.delete(room.id);
               }
             }}
-            crossOrigin="anonymous"
             muted
             playsInline
             loop
@@ -1631,6 +1687,18 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           </button>
         </div>
       )}
+
+      {/* GSAP Cinematic Room Title — reveal on room change (keyframe-free scroll layer) */}
+      <div className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <div
+          ref={setRoomTitleEl}
+          className="opacity-0 px-4 py-1.5 rounded-full bg-black/45 backdrop-blur-md border border-[#c5a880]/25"
+        >
+          <span className="font-display text-[11px] sm:text-sm font-bold tracking-[0.18em] uppercase text-[#e6d5bd]">
+            {isFa && activeRoom.shortNameFa ? activeRoom.shortNameFa : activeRoom.shortName || activeRoom.name}
+          </span>
+        </div>
+      </div>
 
       {/* Decision Gate Modal: Strict Pause Gate & Room Entrance Menu */}
       {activeGateRoom && (
