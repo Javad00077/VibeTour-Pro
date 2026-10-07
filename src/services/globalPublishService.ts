@@ -125,11 +125,19 @@ export async function putRepoFile(path: string, content: string, message: string
       // non-JSON error body
     }
     const reason = detail?.message || res.statusText || `HTTP ${res.status}`;
+    // 401 = the token itself was rejected by GitHub (expired/revoked/malformed
+    // or missing the header). This is NOT a scope problem — a fine-grained PAT
+    // without access would answer 403/404 instead. Verify with:
+    //   curl -H "Authorization: Bearer <TOKEN>" https://api.github.com/user
+    const github401BadCredentials =
+      res.status === 401
+        ? ' — خود توکن نامعتبر است (منقضی، باطل‌شده یا ناقص ذخیره‌شده). یک PAT جدید بسازید و آن را کامل در تب Tools جای‌گذاری کنید؛ این خطا ربطی به دسترسی ریپو ندارد.'
+        : '';
     const github403ScopeBlock =
       res.status === 403 && typeof detail === 'object' && detail?.message === 'Resource not accessible by personal access token'
         ? ' — این PAT دامنه‌های Files/Contents را ندارد (فین‌گرین PAT معمولاً فقط Read دارند). مخفف PAT github_pat_ به repo/write نیاز دارد یا یک Token کلاسیک با کلید repo.'
         : '';
-    throw new Error(`${reason}${github403ScopeBlock}`);
+    throw new Error(`${reason}${github401BadCredentials}${github403ScopeBlock}`);
   }
 }
 
