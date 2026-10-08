@@ -20,18 +20,18 @@
         {
           "id": "twilight-approach",
           "name": "Twilight Pool Approach",
-          "nameFa": "ورود غروب از روی استخر",
+          "nameFa": "Approach",
           "shortName": "01. Approach",
           "shortNameFa": "۰۱. ورود",
           "subtitle": "Gliding across the vanishing-edge pool toward the illuminated glass façade",
           "subtitleFa": "حرکت روی استخر بی‌نهایت به سمت نمای شیشه‌ای نورانی",
           "icon": "Compass",
           "startProgress": 0,
-          "endProgress": 0.24,
+          "endProgress": 0.08,
           "totalFrames": 72,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch01.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/Exterior%20Approach%20%26%20Heliport1.mp4",
           "thumbnailUrl": "video/posters/ch01.jpg",
           "ambientDescription": "The film opens at blue hour: the camera skims the mirror-calm infinity pool, the residence glowing in layered cove lighting beyond the water.",
           "ambientDescriptionFa": "فیلم در ساعت آبی آغاز می‌شود؛ دوربین روی آب آرام استخر بی‌نهایت سُر می‌خورد و عمارت با نورپردازی پنهان در آن‌سوی آب می‌درخشد.",
@@ -100,18 +100,18 @@
         {
           "id": "facade-reveal",
           "name": "Glass Façade Reveal",
-          "nameFa": "نمای شیشه‌ای و ورودی",
-          "shortName": "02. Façade",
+          "nameFa": "GreatRoom",
+          "shortName": "02. GreatRoom",
           "shortNameFa": "۰۲. نما",
           "subtitle": "The full modern pavilion comes into frame across the reflecting water",
           "subtitleFa": "نمای کامل عمارت مدرن در قاب آب انعکاسی",
-          "icon": "Sun",
-          "startProgress": 0.24,
-          "endProgress": 0.47,
+          "icon": "Tv",
+          "startProgress": 0.08,
+          "endProgress": 0.15,
           "totalFrames": 69,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch02.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/main/GreatRoom.mp4",
           "thumbnailUrl": "video/posters/ch02.jpg",
           "ambientDescription": "The approach widens: symmetrical pavilions, floating roof planes and the glass great room arrive together in one composed frame.",
           "ambientDescriptionFa": "زاویه باز می‌شود: پاویون‌های متقارن، سقف‌های شناور و گریت‌روم شیشه‌ای در یک قاب واحد ظاهر می‌شوند.",
@@ -179,18 +179,18 @@
         {
           "id": "threshold-entry",
           "name": "The Threshold Entry",
-          "nameFa": "آستانه ورودی شیشه‌ای",
-          "shortName": "03. Entry",
+          "nameFa": "Kitchen",
+          "shortName": "03. Kitchen",
           "shortNameFa": "۰۳. ورودی",
           "subtitle": "Crossing the glass line into the warm ocean-view interior",
           "subtitleFa": "عبور از خط شیشه به فضای گرم داخل",
-          "icon": "Flame",
-          "startProgress": 0.47,
-          "endProgress": 0.61,
+          "icon": "Utensils",
+          "startProgress": 0.15,
+          "endProgress": 0.23,
           "totalFrames": 42,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch03.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/Kitchen.mp4",
           "thumbnailUrl": "video/posters/ch03.jpg",
           "ambientDescription": "The cut lands inside the entry gallery: the same dusk sky now framed by the interior, water views pulling straight through the house.",
           "ambientDescriptionFa": "نما داخلی می‌شود: همان آسمان غروب حالا از داخل قاب شده و نمای آب مستقیم از یک‌سوی خانه به سوی دیگر ادامه دارد.",
@@ -231,20 +231,73 @@
           ]
         },
         {
+          "id": "salon-panorama",
+          "name": "Sunset Panorama Wall",
+          "nameFa": "Master",
+          "shortName": "05. Master",
+          "shortNameFa": "۰۵. پانوراما",
+          "subtitle": "The camera drifts along 18 meters of uninterrupted ocean glass",
+          "subtitleFa": "دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند",
+          "icon": "Sun",
+          "startProgress": 0.23,
+          "endProgress": 0.31,
+          "totalFrames": 30,
+          "mediaType": "mp4",
+          "mediaUrl": "video/posters/ch05.jpg",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/Master.mp4",
+          "thumbnailUrl": "video/posters/ch05.jpg",
+          "ambientDescription": "Every seat owns the horizon: the drift reveals the full panorama wall, palm silhouettes and the last light on the water.",
+          "ambientDescriptionFa": "هر صندلی رو به افق است: حرکت دوربین کل دیوار پانوراما، سایه نخل‌ها و آخرین نور روی آب را نشان می‌دهد.",
+          "sqft": 2450,
+          "exposure": "West / Direct Sunset",
+          "ceilingHeight": "16 Feet",
+          "enablePauseGate": false,
+          "hotspots": [
+            {
+              "id": "hs-panorama-glass",
+              "x": 50,
+              "y": 40,
+              "frameRange": [
+                2,
+                30
+              ],
+              "title": "18-Meter Seamless Ocean Glass",
+              "category": "Architectural",
+              "description": "Sliding glass bays retract fully into pockets, converting the salon into an open-air pavilion in under a minute.",
+              "spec": "Motorized pocketing sliders, 110V",
+              "priceTag": "$520,000"
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-panorama-frame",
+              "name": "Bronze-Anodized Slider Frames",
+              "category": "Metals & Frames",
+              "origin": "Zurich, Switzerland",
+              "finish": "Micro-brushed 25-micron anodized",
+              "description": "Slim bronze sightlines keep the panorama photographically clean and resist salt-air corrosion.",
+              "swatchUrl": "video/posters/ch05.jpg",
+              "spec": "Qualicoat Class 3 architectural alloy",
+              "x": 55,
+              "y": 35
+            }
+          ]
+        },
+        {
           "id": "grand-salon",
           "name": "Oceanfront Grand Salon",
-          "nameFa": "سالن بزرگ رو به اقیانوس",
-          "shortName": "04. Great Room",
+          "nameFa": "Patio",
+          "shortName": "04. Patio",
           "shortNameFa": "۰۴. سالن",
           "subtitle": "Sunken lounge, fire tables and the concert piano beneath the ocean panorama",
           "subtitleFa": "لانژ سان‌کن، میزهای آتش و پیانوی کنسرت زیر پانورامای اقیانوس",
-          "icon": "Tv",
-          "startProgress": 0.61,
-          "endProgress": 0.82,
+          "icon": "Wine",
+          "startProgress": 0.31,
+          "endProgress": 0.38,
           "totalFrames": 63,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch04.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/Patio.mp4",
           "thumbnailUrl": "video/posters/ch04.jpg",
           "ambientDescription": "The heart of the residence: a double-bay great room where modular lounge seating circles sculptural fire tables and a grand piano waits at the glass.",
           "ambientDescriptionFa": "قلب عمارت: گریت‌رومی دوبخشی که مبل‌های مدرن دور میزهای آتش چیده شده‌اند و پیانوی گند در کنار شیشه منتظر است.",
@@ -310,73 +363,20 @@
           ]
         },
         {
-          "id": "salon-panorama",
-          "name": "Sunset Panorama Wall",
-          "nameFa": "پانورامای غروب",
-          "shortName": "05. Panorama",
-          "shortNameFa": "۰۵. پانوراما",
-          "subtitle": "The camera drifts along 18 meters of uninterrupted ocean glass",
-          "subtitleFa": "دوربین در امتداد ۱۸ متر شیشه بی‌وقفه رو به اقیانوس حرکت می‌کند",
-          "icon": "Sun",
-          "startProgress": 0.82,
-          "endProgress": 0.92,
-          "totalFrames": 30,
-          "mediaType": "mp4",
-          "mediaUrl": "video/posters/ch05.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
-          "thumbnailUrl": "video/posters/ch05.jpg",
-          "ambientDescription": "Every seat owns the horizon: the drift reveals the full panorama wall, palm silhouettes and the last light on the water.",
-          "ambientDescriptionFa": "هر صندلی رو به افق است: حرکت دوربین کل دیوار پانوراما، سایه نخل‌ها و آخرین نور روی آب را نشان می‌دهد.",
-          "sqft": 2450,
-          "exposure": "West / Direct Sunset",
-          "ceilingHeight": "16 Feet",
-          "enablePauseGate": false,
-          "hotspots": [
-            {
-              "id": "hs-panorama-glass",
-              "x": 50,
-              "y": 40,
-              "frameRange": [
-                2,
-                30
-              ],
-              "title": "18-Meter Seamless Ocean Glass",
-              "category": "Architectural",
-              "description": "Sliding glass bays retract fully into pockets, converting the salon into an open-air pavilion in under a minute.",
-              "spec": "Motorized pocketing sliders, 110V",
-              "priceTag": "$520,000"
-            }
-          ],
-          "materials": [
-            {
-              "id": "mat-panorama-frame",
-              "name": "Bronze-Anodized Slider Frames",
-              "category": "Metals & Frames",
-              "origin": "Zurich, Switzerland",
-              "finish": "Micro-brushed 25-micron anodized",
-              "description": "Slim bronze sightlines keep the panorama photographically clean and resist salt-air corrosion.",
-              "swatchUrl": "video/posters/ch05.jpg",
-              "spec": "Qualicoat Class 3 architectural alloy",
-              "x": 55,
-              "y": 35
-            }
-          ]
-        },
-        {
           "id": "evening-finale",
           "name": "Evening in the Salon",
-          "nameFa": "شب در سالن",
-          "shortName": "06. Finale",
+          "nameFa": "Pool",
+          "shortName": "06. Pool",
           "shortNameFa": "۰۶. پایان",
           "subtitle": "Firelight, deep seating and the estate at its most cinematic hour",
           "subtitleFa": "نور آتش، نشیمن گرم و سینمایی‌ترین ساعت عمارت",
           "icon": "Flame",
-          "startProgress": 0.92,
-          "endProgress": 1,
+          "startProgress": 0.38,
+          "endProgress": 0.46,
           "totalFrames": 24,
           "mediaType": "mp4",
           "mediaUrl": "video/posters/ch06.jpg",
-          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/Pool1.mp4",
           "thumbnailUrl": "video/posters/ch06.jpg",
           "ambientDescription": "The film closes on the salon at night: flames reflected in the glass, the Pacific gone deep blue, the residence fully itself.",
           "ambientDescriptionFa": "فیلم با سالن در شب تمام می‌شود: بازتاب شعله‌ها روی شیشه، اقیانوس آبی عمیق و عمارت در اوج اقتدار.",
@@ -414,6 +414,384 @@
               "y": 60
             }
           ]
+        },
+        {
+          "id": "room-custom-1791467393938",
+          "name": "Private Suite 8",
+          "nameFa": "BR1",
+          "shortName": "08. BR1",
+          "shortNameFa": "08. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.46,
+          "endProgress": 0.54,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/BR1.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791467393938",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791467393938",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        },
+        {
+          "id": "room-custom-1791467391852",
+          "name": "Private Suite 7",
+          "nameFa": "BR2",
+          "shortName": "07. BR2",
+          "shortNameFa": "07. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.54,
+          "endProgress": 0.62,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/1790533440466980867-0_1790533440.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791467391852",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791467391852",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        },
+        {
+          "id": "room-custom-1791467394898",
+          "name": "Private Suite 9",
+          "nameFa": "Backyard",
+          "shortName": "09. Backyard",
+          "shortNameFa": "09. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.62,
+          "endProgress": 0.69,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/1790499051427617067-0_1790499051.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791467394898",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791467394898",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        },
+        {
+          "id": "room-custom-1791467395783",
+          "name": "Private Suite 10",
+          "nameFa": "Garage",
+          "shortName": "010. Garage",
+          "shortNameFa": "010. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.69,
+          "endProgress": 0.77,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/1790533770889621841-0_1790533770.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791467395783",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791467395783",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        },
+        {
+          "id": "room-custom-1791467954799",
+          "name": "Private Suite 11",
+          "nameFa": "Office",
+          "shortName": "011. Office",
+          "shortNameFa": "011. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.77,
+          "endProgress": 0.85,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/Office.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791467954799",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791467954799",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        },
+        {
+          "id": "room-custom-1791468372750",
+          "name": "Private Suite 12",
+          "nameFa": "Laundry",
+          "shortName": "012. Laundry",
+          "shortNameFa": "012. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.85,
+          "endProgress": 0.92,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "https://github.com/Javad00077/VibeTour-Pro/blob/Javad00077-patch-1/src/Laundry_Room.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791468372750",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791468372750",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
+        },
+        {
+          "id": "room-custom-1791468442807",
+          "name": "Private Suite 13",
+          "nameFa": "Suite 13",
+          "shortName": "013. Suite",
+          "shortNameFa": "013. Suite",
+          "subtitle": "Luxury bespoke living space",
+          "subtitleFa": "Luxury bespoke living space",
+          "icon": "BedDouble",
+          "startProgress": 0.92,
+          "endProgress": 1,
+          "totalFrames": 90,
+          "mediaType": "mp4",
+          "mediaUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1920&q=85",
+          "videoUrl": "video/Royal-Palm-Master.mp4",
+          "thumbnailUrl": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80",
+          "ambientDescription": "Seamless modern design with floor-to-ceiling glass and smart automated environment controls.",
+          "ambientDescriptionFa": "Modern architecture with panoramic glazing and smart automation.",
+          "sqft": 1200,
+          "exposure": "South / West",
+          "ceilingHeight": "3.6m",
+          "hotspots": [
+            {
+              "id": "hs-1791468442807",
+              "x": 50,
+              "y": 50,
+              "frameRange": [
+                10,
+                70
+              ],
+              "title": "Custom Italian Joinery",
+              "titleFa": "Custom Italian Walnut Millwork",
+              "category": "Design",
+              "description": "Hand-finished walnut millwork with integrated LED reveal detailing.",
+              "descriptionFa": "Handcrafted walnut cabinetry with indirect linear LED reveals."
+            }
+          ],
+          "materials": [
+            {
+              "id": "mat-1791468442807",
+              "name": "Calacatta Borghini Marble",
+              "nameFa": "Calacatta Borghini Marble",
+              "category": "Stone & Marble",
+              "origin": "Carrara, Tuscany, Italy",
+              "finish": "Silk Satin Honed",
+              "description": "Prestigious white marble with honey gold veining.",
+              "descriptionFa": "Prestigious white marble with warm honey-gold veining.",
+              "swatchUrl": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=300&q=80",
+              "spec": "20mm Slab",
+              "x": 45,
+              "y": 60
+            }
+          ]
         }
       ],
       "broker": {
@@ -441,10 +819,11 @@
     "language": "en",
     "autoplaySpeed": 0.6,
     "scrollSpeedFactor": 0.25,
+    "enableRoomMenu": true,
     "cssPrefix": "vbt-t-",
     "glassBlur": 20
   },
   "selectedPropertyId": "royal-palm-estate",
   "activeRoomId": "twilight-approach",
-  "updatedAt": "2026-10-08T06:48:00.500Z"
+  "updatedAt": "2026-10-08T14:08:21.705Z"
 }
