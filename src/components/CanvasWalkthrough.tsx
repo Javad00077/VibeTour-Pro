@@ -21,6 +21,7 @@ import {
   Sliders,
   Layers,
   ArrowRight,
+  LayoutGrid,
   ShieldCheck,
   Gauge,
   Lock,
@@ -31,6 +32,7 @@ import { PropertyListing, Room, Hotspot, MaterialItem, PluginConfig } from '../t
 import { soundEngine } from '../utils/audioSynth';
 import { analyzeAndConvertVideoUrl, applyVideoCrossOrigin, shouldRequestCors } from '../utils/videoUrlHelper';
 import { decideScrub } from '../utils/scrubEngine';
+import { mobileVariantCandidates, hasMobileVariant } from '../utils/mobileVideoVariant';
 import {
   gsap,
   prefersReducedMotion,
@@ -49,6 +51,9 @@ interface CanvasWalkthroughProps {
 
 // Tuned motion constants (progress units are 0..1 across the whole tour)
 const BASE_WHEEL_SENSITIVITY = 0.000085; // progress per deltaY pixel at 1.0x speed
+// Progress below which the visitor is considered "at the start": the
+// transparent all-rooms menu lives here and returns on a back-scroll.
+const START_MENU_THRESHOLD = 0.012;
 const LERP_RATE = 14;                    // progress chase rate (divided by scrubSmoothing)
 const AUTOPLAY_RATE = 0.02;              // progress per second at 1.0x autoplay speed
 
@@ -180,10 +185,15 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   const [lang] = useState<'fa' | 'en'>('en');
   const [fps, setFps] = useState<number>(60);
   const [showStartCue, setShowStartCue] = useState<boolean>(true);
+  // Transparent all-rooms start menu, shown over the first video at tour start.
+  const [showStartMenu, setShowStartMenu] = useState<boolean>(config.enableRoomMenu !== false);
+  // Once the visitor explicitly dismisses the menu (X / ESC) it stays gone
+  // until they reopen it from the floating "Room Menu" button.
+  const menuDismissedRef = useRef<boolean>(false);
   const isFa = lang === 'fa';
 
   // Scroll speed comes straight from the sanitized config (admin adjustable)
-  const initialSpeed = config.scrollSpeedFactor || 0.5;
+  const initialSpeed = config.scrollSpeedFactor || 0.25;
   const [scrollSpeed, setScrollSpeed] = useState<number>(initialSpeed);
   const scrollSpeedRef = useRef<number>(initialSpeed);
   const [showSpeedPanel, setShowSpeedPanel] = useState<boolean>(false);
@@ -220,7 +230,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
   }, [scrollSpeed]);
 
   useEffect(() => {
-    const targetSpeed = config.scrollSpeedFactor || 0.5;
+    const targetSpeed = config.scrollSpeedFactor || 0.25;
     setScrollSpeed(targetSpeed);
     scrollSpeedRef.current = targetSpeed;
   }, [config.scrollSpeedFactor]);
@@ -275,7 +285,15 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
 
   const resolveCandidates = useCallback((room?: Room): string[] => {
     if (!room || !room.videoUrl || room.videoUrl.startsWith('blob:')) return [];
-    return analyzeAndConvertVideoUrl(room.videoUrl).candidates;
+    const base = analyzeAndConvertVideoUrl(room.videoUrl).candidates;
+    if (base.length === 0) return [];
+    // Mobile path: when a local 720p variant exists for this clip, put the
+    // light variant FIRST (original stays as the quality fallback via the
+    // candidate-error walker). This is the core fix for the mobile lag report.
+    if (isMobileRef.current && hasMobileVariant(room.videoUrl)) {
+      return mobileVariantCandidates(base[0], true).concat(base.slice(1));
+    }
+    return base;
   }, []);
 
   // Attach a fallback walker: on load error, advance to the next candidate
@@ -605,14 +623,16 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       const idx = property.rooms.indexOf(matched);
       activeRoomIndexRef.current = idx >= 0 ? idx : 0;
       if (activeRoomId && targetId === activeRoomId) {
-        jumpToRoom(matched, true);
+        // keepStartMenu: this is a programmatic sync (e.g. restored last room),
+        // not a user click — don't dismiss the transparent start menu.
+        jumpToRoom(matched, true, { keepStartMenu: true });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeRoomId, property.rooms]);
 
   // Jump to specific room
-  const jumpToRoom = (room: Room, immediate: boolean = true) => {
+  const jumpToRoom = (room: Room, immediate: boolean = true, opts?: { keepStartMenu?: boolean }) => {
     if (!room) return;
     // Release any checkpoint gate lock
     isGateLockedRef.current = false;
@@ -631,6 +651,9 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     setActiveRoom(room);
     setSelectedHotspot(null);
     setShowHubModal(false);
+    if (!opts?.keepStartMenu) {
+      setShowStartMenu(false);
+    }
     soundEngine.triggerHapticChime(560);
     
     // Select first material for drawer
@@ -772,6 +795,8 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
         setSelectedHotspot(null);
         setShowHubModal(false);
         setShowSpeedPanel(false);
+        menuDismissedRef.current = true;
+        setShowStartMenu(false);
       }
     };
 
@@ -873,6 +898,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     let fpsTimer = performance.now();
     let lastRoomId = property.rooms[0]?.id;
     let lastCueVisible = true;
+    let lastInStartRegion = true;
 
     const renderLoop = (time: number) => {
       const dt = Math.min(0.1, (time - lastTimeRef.current) / 1000);
@@ -909,6 +935,21 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
       if (cueVisible !== lastCueVisible) {
         lastCueVisible = cueVisible;
         setShowStartCue(cueVisible);
+      }
+
+      // Transparent all-rooms start menu: shown over the first video at the
+      // top of the tour, hidden as soon as the visitor scrolls in, and
+      // brought back by a back-scroll that returns to the start region.
+      // Explicit dismissal (X / ESC) keeps it hidden until reopened from the
+      // floating "Room Menu" button.
+      const inStartRegion = currentProg < START_MENU_THRESHOLD;
+      if (inStartRegion !== lastInStartRegion) {
+        lastInStartRegion = inStartRegion;
+        if (!inStartRegion) {
+          setShowStartMenu(false);
+        } else if (!menuDismissedRef.current && config.enableRoomMenu !== false) {
+          setShowStartMenu(true);
+        }
       }
 
       // Update DOM progress bar & timers directly
@@ -1265,8 +1306,14 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
     const updateSize = () => {
       if (canvasRef.current && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        canvasRef.current.width = rect.width * (window.devicePixelRatio > 1 ? 1.5 : 1);
-        canvasRef.current.height = rect.height * (window.devicePixelRatio > 1 ? 1.5 : 1);
+        // Mobile render-budget cap: phones paint this canvas at 60fps with a
+        // weak GPU — a 1.5x supersample triples the fill cost and was a big
+        // contributor to the reported mobile lag. 1.25x keeps text/vector
+        // overlays crisp enough while cutting fill rate ~30%.
+        const mobileCap = isMobileRef.current ? 1.25 : 1.5;
+        const f = window.devicePixelRatio > 1 ? mobileCap : 1;
+        canvasRef.current.width = Math.round(rect.width * f);
+        canvasRef.current.height = Math.round(rect.height * f);
       }
     };
 
@@ -1443,7 +1490,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
             data-room-id="__master__"
             muted
             playsInline
-            preload="auto"
+            preload={isMobileRef.current ? 'metadata' : 'auto'}
             disablePictureInPicture
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -1462,7 +1509,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
             muted
             playsInline
             loop
-            preload="auto"
+            preload={isMobileRef.current ? 'metadata' : 'auto'}
             disablePictureInPicture
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out ${
               activeRoom.id === room.id ? 'opacity-100' : 'opacity-0'
@@ -1591,7 +1638,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                 >
                   <Gauge className="w-3.5 h-3.5 text-[#c5a880]" />
                   <span className="font-mono text-[11px] font-bold">
-                    {scrollSpeed.toFixed(1)}x
+                    {scrollSpeed.toFixed(2)}x
                   </span>
                 </button>
 
@@ -1613,51 +1660,25 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
                       </button>
                     </div>
 
-                    {/* Preset Speed Buttons */}
+                    {/* Locked Speed Indicator (0.25x — not adjustable) */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] text-slate-300 block">
                         Speed Presets:
                       </span>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {[
-                          { val: 0.25, label: '0.25x Slow' },
-                          { val: 0.5, label: '0.50x Cinematic' },
-                          { val: 1.0, label: '1.00x Standard' },
-                          { val: 2.0, label: '2.00x Fast' },
-                        ].map((item) => (
-                          <button
-                            key={item.val}
-                            onClick={() => {
-                              setScrollSpeed(item.val);
-                              soundEngine.triggerHapticChime(500);
-                            }}
-                            className={`px-2 py-1.5 rounded-xl text-[10px] font-medium transition-all text-center ${
-                              Math.abs(scrollSpeed - item.val) < 0.05
-                                ? 'bg-[#c5a880] text-black font-bold shadow'
-                                : 'bg-white/5 hover:bg-white/15 text-slate-200'
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
+                      <div className="p-2.5 rounded-xl bg-black/30 border border-[#c5a880]/40 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
+                          <span className="text-[10px] text-slate-200 font-semibold">
+                            0.25x — Locked
+                          </span>
+                        </div>
+                        <span className="font-mono text-[11px] font-bold text-[#c5a880]">
+                          {scrollSpeed.toFixed(2)}x
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Fine Tuning Slider */}
-                    <div className="space-y-1 pt-1">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-slate-400">Fine Tuning:</span>
-                        <span className="font-mono text-[#c5a880] font-bold">{scrollSpeed.toFixed(2)}x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="2.5"
-                        step="0.05"
-                        value={scrollSpeed}
-                        onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
-                        className="w-full accent-[#c5a880] cursor-pointer h-1.5"
-                      />
+                      <p className="text-[10px] text-slate-400 leading-relaxed pt-1">
+                        Scroll speed is fixed for a smooth, lag-free scrub and cannot be changed.
+                      </p>
                     </div>
 
                     {/* Checkpoint Gates Toggle */}
@@ -1730,6 +1751,104 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Transparent All-Rooms Start Menu — overlaid on the first video */}
+      {config.enableRoomMenu !== false && showStartMenu && (
+        <div className="absolute inset-0 z-[36] flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-300 pointer-events-none">
+          <div
+            className="max-w-5xl w-full vbt-glass p-5 sm:p-7 rounded-3xl shadow-2xl relative space-y-4 max-h-[88vh] overflow-y-auto pointer-events-auto"
+            style={{ backgroundColor: 'rgba(18, 20, 29, 0.45)' }}
+          >
+            {/* Close (dismiss menu) */}
+            <button
+              onClick={() => {
+                menuDismissedRef.current = true;
+                setShowStartMenu(false);
+              }}
+              aria-label={isFa ? 'بستن منوی اتاق‌ها' : 'Close room menu'}
+              className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-white rounded-xl hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a880]"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="text-center space-y-1 pr-10">
+              <span className="text-[10px] sm:text-[11px] uppercase font-mono tracking-[0.2em] text-[#c5a880] font-bold">
+                {isFa ? 'فهرست اتاق‌ها' : 'Estate Room Menu'}
+              </span>
+              <h2 className="font-display text-lg sm:text-2xl font-bold text-white">
+                {isFa ? 'کل اتاق‌ها را انتخاب کنید' : 'Select Any Chamber'}
+              </h2>
+              <p className="text-[11px] sm:text-xs text-slate-300 max-w-lg mx-auto font-light">
+                {isFa
+                  ? 'با اسکرول به عقب همیشه می‌توانید به این منو بازگردید، یا از دکمهٔ زیر ادامه دهید.'
+                  : 'Scroll back anytime to return to this menu, or continue the tour with the button below.'}
+              </p>
+            </div>
+
+            {/* All rooms — numbered thumbnail grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+              {property.rooms.map((room, idx) => (
+                <button
+                  key={room.id}
+                  onClick={() => jumpToRoom(room, true)}
+                  className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-[#c5a880]/70 bg-black/35 hover:bg-black/55 transition-all text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a880]"
+                >
+                  <div className="relative aspect-[4/3]">
+                    <img
+                      src={room.thumbnailUrl}
+                      alt={room.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                    <span className="absolute top-1.5 left-1.5 text-[10px] font-mono text-[#c5a880] font-bold px-1.5 py-0.5 bg-black/70 rounded border border-[#c5a880]/30">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-2 flex items-center justify-between gap-1 min-h-[44px]">
+                    <span className="text-[11px] sm:text-xs font-bold text-white truncate group-hover:text-[#c5a880] transition-colors">
+                      {isFa && room.shortNameFa ? room.shortNameFa : room.shortName || room.name}
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#c5a880] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Footer: continue without permanently dismissing */}
+            <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+              <button
+                onClick={() => setShowStartMenu(false)}
+                className="px-5 py-2.5 min-h-[44px] rounded-xl bg-[#c5a880] hover:bg-[#e6d5bd] text-black text-xs font-bold flex items-center gap-2 transition-all shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <span>{isFa ? 'شروع تور و ادامهٔ اسکرول' : 'Start Tour & Keep Scrolling'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                <LayoutGrid className="w-3.5 h-3.5 text-[#c5a880]" />
+                <span>{isFa ? 'با دکمهٔ «منوی اتاق‌ها» دوباره باز می‌شود' : 'Reopen anytime from the Room Menu button'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating "Room Menu" reopen button (after dismissal) */}
+      {config.enableRoomMenu !== false && !showStartMenu && (
+        <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-30 animate-in fade-in zoom-in-95 duration-200">
+          <button
+            onClick={() => {
+              menuDismissedRef.current = false;
+              setShowStartMenu(true);
+            }}
+            aria-label={isFa ? 'باز کردن منوی اتاق‌ها' : 'Open room menu'}
+            className="vbt-glass px-3.5 py-2 min-h-[44px] rounded-full flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#e6d5bd] hover:bg-white/10 transition-all shadow-2xl border border-[#c5a880]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a880]"
+          >
+            <LayoutGrid className="w-4 h-4 text-[#c5a880]" />
+            <span>{isFa ? 'منوی اتاق‌ها' : 'Room Menu'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Decision Gate Modal: Strict Pause Gate & Room Entrance Menu */}
       {activeGateRoom && (
@@ -2100,7 +2219,7 @@ export const CanvasWalkthrough: React.FC<CanvasWalkthroughProps> = ({
               >
                 {renderRoomIcon(room.icon, isCurrent ? 'w-3 h-3 sm:w-3.5 sm:h-3.5 text-black' : 'w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#c5a880]')}
                 <span className="tracking-wide">
-                  {isFa && room.shortNameFa ? room.shortNameFa : room.shortName}
+                  {isFa && room.shortNameFa ? room.shortNameFa : room.shortName || room.name}
                 </span>
                 {isCurrent && (
                   <span className="w-1.5 h-1.5 rounded-full bg-black ml-0.5 animate-pulse" />

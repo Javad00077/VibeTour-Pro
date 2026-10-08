@@ -1311,6 +1311,7 @@ export const DEFAULT_CONFIG: PluginConfig = {
   language: 'en',
   autoplaySpeed: 0.6,
   scrollSpeedFactor: 0.25,
+  enableRoomMenu: true,
   cssPrefix: 'vbt-t-',
   glassBlur: 8
 };

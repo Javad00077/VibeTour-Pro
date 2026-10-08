@@ -89,7 +89,8 @@ export interface PropertyListing {
 
 export interface PluginConfig {
   scrubSmoothing: number; // 1.0 to 3.0
-  scrollSpeedFactor: number; // 0.2 to 1.0 (slower, cinematic)
+  scrollSpeedFactor: number; // locked to 0.25 (tuned cinematic default — see sanitizeConfig)
+  enableRoomMenu?: boolean; // transparent all-rooms start menu over the first video (default true)
   enableGlobalCheckpointGates?: boolean; // Whether room transition decision portals stop scroll
   cacheBufferThreshold: number; // percentage (e.g. 30%)
   enableWorkerPool: boolean;

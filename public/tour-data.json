@@ -440,11 +440,11 @@
     "liteSpeedSafe": true,
     "language": "en",
     "autoplaySpeed": 0.6,
-    "scrollSpeedFactor": 0.5,
+    "scrollSpeedFactor": 0.25,
     "cssPrefix": "vbt-t-",
     "glassBlur": 20
   },
   "selectedPropertyId": "royal-palm-estate",
   "activeRoomId": "twilight-approach",
-  "updatedAt": "2026-10-07T12:33:09.498Z"
+  "updatedAt": "2026-10-08T06:48:00.500Z"
 }

@@ -2357,6 +2357,28 @@ When user scrolls, motion pauses at designated checkpoint and prompts room navig
                     className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
                   />
                 </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300">Menu Label (Persian) — shown in main menu tabs:</label>
+                  <input
+                    type="text"
+                    value={selectedRoom.shortNameFa || ''}
+                    placeholder="e.g. 01. Grand Living"
+                    onChange={(e) => handleUpdateRoomField(selectedRoom.id, 'shortNameFa', e.target.value)}
+                    className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300">Menu Label (English) — shown in main menu tabs:</label>
+                  <input
+                    type="text"
+                    value={selectedRoom.shortName || ''}
+                    placeholder="e.g. 01. Grand Living"
+                    onChange={(e) => handleUpdateRoomField(selectedRoom.id, 'shortName', e.target.value)}
+                    className="w-full bg-[#12141f] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#c5a880]"
+                  />
+                </div>
               </div>
 
             </div>
@@ -2380,59 +2402,29 @@ When user scrolls, motion pauses at designated checkpoint and prompts room navig
                 </div>
               </div>
               <span className="font-mono text-sm text-[#c5a880] font-bold">
-                {((config.scrollSpeedFactor || 0.1) * 100).toFixed(0)}% Speed
+                {((config.scrollSpeedFactor || 0.25) * 100).toFixed(0)}% Speed (Locked)
               </span>
             </div>
 
-            {/* Scroll Speed Factor with Presets */}
+            {/* Scroll Speed Factor — locked to 0.25 (not adjustable) */}
             <div className="space-y-3">
               <label className="text-xs font-semibold text-white block">
-                Speed Multiplier Presets:
+                Speed Multiplier:
               </label>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {[
-                  { label: '0.25x Slow', val: 0.25, desc: 'Cinematic Slow' },
-                  { label: '0.50x Cinematic', val: 0.5, desc: 'Tuned Default' },
-                  { label: '1.00x Standard', val: 1.0, desc: 'Balanced' },
-                  { label: '2.00x Fast', val: 2.0, desc: 'Responsive' },
-                ].map((item) => (
-                  <button
-                    key={item.val}
-                    type="button"
-                    onClick={() => {
-                      onUpdateConfig({ ...config, scrollSpeedFactor: item.val });
-                      showToast(`Scroll speed set to ${item.val}x applied.`);
-                    }}
-                    className={`p-3 rounded-2xl border text-right transition-all ${
-                      Math.abs((config.scrollSpeedFactor || 0.1) - item.val) < 0.05
-                        ? 'bg-[#c5a880] text-black font-bold border-[#c5a880] shadow-lg'
-                        : 'bg-[#141624] text-slate-300 border-white/10 hover:border-[#c5a880]/50'
-                    }`}
-                  >
-                    <span className="text-xs block font-bold">{item.label}</span>
-                    <span className="text-[10px] opacity-75 font-mono mt-0.5 block">{item.desc}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Range Slider for Fine Tuning */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Fine Tune Speed Factor:</span>
-                  <span className="font-mono text-[#c5a880] font-bold">
-                    {(config.scrollSpeedFactor || 0.1).toFixed(2)}x
-                  </span>
+              <div className="p-4 rounded-2xl bg-[#141624] border border-[#c5a880]/40 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Lock className="w-4 h-4 text-[#c5a880] shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">0.25x — Locked Default</span>
+                    <span className="text-[11px] text-slate-400 block mt-0.5">
+                      Scroll speed is fixed at 0.25x for a smooth, lag-free cinematic scrub.
+                    </span>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0.05"
-                  max="2.0"
-                  step="0.05"
-                  value={config.scrollSpeedFactor || 0.1}
-                  onChange={(e) => onUpdateConfig({ ...config, scrollSpeedFactor: parseFloat(e.target.value) })}
-                  className="w-full accent-[#c5a880] cursor-pointer h-2"
-                />
+                <span className="font-mono text-sm text-[#c5a880] font-bold shrink-0">
+                  {(config.scrollSpeedFactor || 0.25).toFixed(2)}x
+                </span>
               </div>
             </div>
 

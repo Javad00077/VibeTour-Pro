@@ -128,11 +128,11 @@ export function sanitizeConfig(cfg?: PluginConfig | null): PluginConfig {
     ...(cfg || {}),
     language: 'en'
   };
-  // Guard against invalid / unset values only — never override a deliberate setting
-  const speed = merged.scrollSpeedFactor;
-  if (typeof speed !== 'number' || !Number.isFinite(speed) || speed <= 0 || speed > 3) {
-    merged.scrollSpeedFactor = DEFAULT_CONFIG.scrollSpeedFactor;
-  }
+  // Scroll speed is LOCKED at the tuned 0.25x default. Older sessions stored 0.5
+  // (and legacy code fell back to 0.1/0.5), which kept overriding the requested
+  // 0.25 — force it here so every load path (localStorage, cloud, bundled store)
+  // converges to the same smooth, lag-free value.
+  merged.scrollSpeedFactor = DEFAULT_CONFIG.scrollSpeedFactor;
   return merged;
 }
 

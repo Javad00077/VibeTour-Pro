@@ -510,6 +510,36 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
                   </div>
                 </div>
 
+                {/* Menu Label — shown on the main-menu tabs & start menu */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">
+                      Menu Label (Persian)
+                    </label>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={currentEditingRoom.shortNameFa || ''}
+                      onChange={(e) => handleUpdateRoomField(currentEditingRoom.id, 'shortNameFa', e.target.value)}
+                      placeholder="e.g. 01. Grand Living"
+                      className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-1.5 text-white focus:border-[#c5a880] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">
+                      Menu Label (English)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentEditingRoom.shortName || ''}
+                      onChange={(e) => handleUpdateRoomField(currentEditingRoom.id, 'shortName', e.target.value)}
+                      placeholder="e.g. 01. Grand Living"
+                      className="w-full bg-[#0d0f16] border border-white/10 rounded-xl px-3 py-1.5 text-white focus:border-[#c5a880] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
                 {/* Subtitles */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -908,52 +938,28 @@ export const ElementorBuilder: React.FC<ElementorBuilderProps> = ({
               </p>
             </div>
 
-            {/* Slower Scroll Factor */}
-            <div className="p-4 bg-[#161822] rounded-2xl border border-white/10 space-y-3 shadow-lg">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-white">
-                  Scroll Speed Multiplier (Default 0.5x — Cinematic Smoothness)
-                </label>
+            {/* Scroll Speed Factor — locked to 0.25 (not adjustable) */}
+            <div className="p-4 bg-[#161822] rounded-2xl border border-[#c5a880]/40 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-[#c5a880] shrink-0" />
+                  <label className="text-xs font-semibold text-white">
+                    Scroll Speed Multiplier — 0.25x (Locked)
+                  </label>
+                </div>
                 <span className="font-mono text-xs font-bold text-[#c5a880]">
-                  {((config.scrollSpeedFactor || 0.1) * 100).toFixed(0)}% Speed
+                  {((config.scrollSpeedFactor || 0.25) * 100).toFixed(0)}% Speed
                 </span>
               </div>
 
-              {/* Quick Presets */}
-              <div className="grid grid-cols-4 gap-1.5 pt-1">
-                {[
-                  { label: '0.25x Slow', val: 0.25 },
-                  { label: '0.50x Cinematic', val: 0.5 },
-                  { label: '1.00x Standard', val: 1.0 },
-                  { label: '2.00x Fast', val: 2.0 },
-                ].map((p) => (
-                  <button
-                    key={p.val}
-                    type="button"
-                    onClick={() => onUpdateConfig({ ...config, scrollSpeedFactor: p.val })}
-                    className={`py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                      Math.abs((config.scrollSpeedFactor || 0.1) - p.val) < 0.05
-                        ? 'bg-[#c5a880] text-black shadow'
-                        : 'bg-white/5 hover:bg-white/15 text-slate-300'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+              <div className="p-3 rounded-xl bg-black/30 border border-white/10 flex items-center justify-between gap-3">
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Scroll speed is fixed at 0.25x for a smooth, lag-free cinematic scrub and cannot be changed.
+                </p>
+                <span className="font-mono text-sm font-bold text-[#c5a880] shrink-0">
+                  {(config.scrollSpeedFactor || 0.25).toFixed(2)}x
+                </span>
               </div>
-
-              <input
-                type="range"
-                min="0.05"
-                max="2.0"
-                step="0.05"
-                value={config.scrollSpeedFactor || 0.1}
-                onChange={(e) => onUpdateConfig({ ...config, scrollSpeedFactor: parseFloat(e.target.value) })}
-                className="w-full accent-[#c5a880] cursor-pointer"
-              />
-              <p className="text-[10px] text-slate-400 leading-relaxed">
-                50% is the tuned default: one full tour takes roughly one mouse-wheel pass or 8–12 trackpad flicks.
-              </p>
             </div>
 
             {/* Global Checkpoint Gates Toggle */}
